@@ -2,5 +2,6 @@
     "java.project.sourcePaths": [
         "src",
         "lib"
-    ]
+    ],
+    "java.debug.settings.onBuildFailureProceed": true
 }

@@ -37,11 +37,11 @@ public class Main {
          */
         System.out.println(sourceCode.toString());
         var symbols = new Lexer(sourceCode).scan();
-        if (cli.dumpPhases.contains(Phase.LEX)) {
+        //if (cli.dumpPhases.contains(Phase.LEX)) {
             for (var symbol : symbols) {
                 System.out.println(symbol.toString());
             }
-        }
+        //}
         if (cli.execPhase == Phase.LEX) {
             return;
         }

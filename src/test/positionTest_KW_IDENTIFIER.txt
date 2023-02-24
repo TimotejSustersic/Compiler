@@ -1,0 +1,5 @@
+codex
+kul \r\n buddy
+while
+
+EOF
