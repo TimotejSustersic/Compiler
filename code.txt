@@ -1,7 +1,9 @@
-integer x = 2+3;
+# preprost program
+num:integer = 2;
+zmnozek:integer = num*num;
+sum:integer = 0;
 
-if (x!=3 && x >= 5) {
-    integer b = 1;
+# je to zanka?
+for (i:integer = 0; (i > zmnozek) == false; i = i + 1) {
+    sum = sum + i;
 }
-
-EOF

@@ -35,7 +35,6 @@ public class Main {
         /**
          * Izvedi leksikalno analizo.
          */
-        System.out.println(sourceCode.toString());
         var symbols = new Lexer(sourceCode).scan();
         //if (cli.dumpPhases.contains(Phase.LEX)) {
             for (var symbol : symbols) {

@@ -48,4 +48,72 @@ public class LexerTest {
 
         assertEquals(expectedResult, givenResult);
     }
+
+    @Test
+    public void positionTest_Number() throws IOException  {
+        String[] args = {"PINS", "positionTest_Number.txt"};
+        var cli = PINS.parse(args);
+        //var sourceCode = Files.readString(Paths.get(cli.sourceFile));
+        // var symbols = new Lexer(sourceCode).scan();
+
+        String givenResult = "";
+        // for (var symbol : symbols) {
+        //     givenResult += symbol.toString();
+        // }
+
+        String expectedResult = "";
+
+        assertEquals(expectedResult, givenResult);
+    }    
+
+    @Test
+    public void positionTest_IDENTIFIER_Wrong_Decleration() throws IOException  {
+        String[] args = {"PINS", "positionTest_IDENTIFIER_Wrong_Decleration.txt"};
+        var cli = PINS.parse(args);
+        //var sourceCode = Files.readString(Paths.get(cli.sourceFile));
+        // var symbols = new Lexer(sourceCode).scan();
+
+        String givenResult = "";
+        // for (var symbol : symbols) {
+        //     givenResult += symbol.toString();
+        // }
+
+        String expectedResult = "";
+
+        assertEquals(expectedResult, givenResult);
+    }   
+
+    @Test
+    public void positionTest_String() throws IOException  {
+        String[] args = {"PINS", "positionTest_String.txt"};
+        var cli = PINS.parse(args);
+        //var sourceCode = Files.readString(Paths.get(cli.sourceFile));
+        // var symbols = new Lexer(sourceCode).scan();
+
+        String givenResult = "";
+        // for (var symbol : symbols) {
+        //     givenResult += symbol.toString();
+        // }
+
+        String expectedResult = "[1:1-1:7] AT_STRING:string[1:8-1:9] IDENTIFIER:s[1:10-1:11] OP_ASSIGN:=[1:13-1:16] C_STRING:niz[1:17-1:18] OP_SEMICOLON:;";
+
+        assertEquals(expectedResult, givenResult);
+    }    
+
+    @Test
+    public void positionTest_Unfinnished_String() throws IOException  {
+        String[] args = {"PINS", "positionTest_Unfinnished_String.txt"};
+        var cli = PINS.parse(args);
+        //var sourceCode = Files.readString(Paths.get(cli.sourceFile));
+        // var symbols = new Lexer(sourceCode).scan();
+
+        String givenResult = "";
+        // for (var symbol : symbols) {
+        //     givenResult += symbol.toString();
+        // }
+
+        String expectedResult = "";
+
+        assertEquals(expectedResult, givenResult);
+    }   
 }

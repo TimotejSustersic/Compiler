@@ -46,7 +46,6 @@ public class Lexer {
                 keywordMapping.put(str.substring("AT_".length()).toLowerCase(), token);
             }
         }
-        System.out.println(keywordMapping);
     }
 
     /**
@@ -70,22 +69,52 @@ public class Lexer {
 
         // process add operator
         ++this.column;
+
+        // if operator has 2 letters
         if (operator.length() == 2)
             ++this.column;
-        var endLocation = new Location(this.line, this.column);        
+
+        var endLocation = new Location(this.line, this.column - 1);        
         symbols.add(new Symbol(this.startLocation, endLocation, tokenType, operator));
 
         // update start
         this.startLocation = new Location(this.line, this.column); 
     }
 
+    // if the word is a integer
+    public boolean isInteger() {
+
+        for (int i = 1; i < this.word.length(); i++) {
+
+            char letter = this.word.charAt(i);
+
+            if (letter < 48 || letter > 57) {
+                
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // if the word is a string
+    public boolean isString() {
+        return false;
+    }
+
     // start location is neccesery mybe endLocation will become too
     public void processWord() {
-        var endLocation = new Location(this.line, this.column);
+        var endLocation = new Location(this.line, this.column - 1);
         if (keywordMapping.containsKey(this.word)) 
             symbols.add(new Symbol(this.startLocation, endLocation, keywordMapping.get(this.word), this.word));
-        else if (this.word == "EOF") 
-            symbols.add(new Symbol(this.startLocation, endLocation, EOF, this.word));                    
+        //else if (this.word.equals("EOF")) 
+            //symbols.add(new Symbol(this.startLocation, endLocation, EOF, this.word));           
+        else if (this.word.equals("true") || this.word.equals("false") )
+            symbols.add(new Symbol(this.startLocation, endLocation, C_LOGICAL, this.word));
+        else if (this.word.charAt(0) >= 48 && this.word.charAt(0) <= 57) 
+            if (this.isInteger())
+                symbols.add(new Symbol(this.startLocation, endLocation, C_INTEGER, this.word));   
+            else
+                Report.error(new Position(this.startLocation, this.startLocation), "IDENTIFIER can't start with an integer.");           
         else 
             symbols.add(new Symbol(this.startLocation, endLocation, IDENTIFIER, this.word));        
     }
@@ -96,18 +125,111 @@ public class Lexer {
      * @return seznam leksikalnih simbolov.
      */
     public List<Symbol> scan() {
+
+        // first check if souce code has an ending
+        //if (this.source.length() < 3 || !this.source.substring(this.source.length() - 3, this.source.length()).equals("EOF"))
+            //Report.error("File is missing and EOF ending.");
+
         this.symbols = new ArrayList<Symbol>();
         
         // current symbol
         this.word = "";
         this.startLocation = new Location(this.line, this.column);
+        var endLocation = new Location(this.line, this.column);
+
+        var isString = false;
+        var isComment = false;
 
         for (int i = 0; i < this.source.length(); i++) {
 
             char letter = this.source.charAt(i);
 
+            
+            // string inside 39 == '
+            if (letter == 39) {
+                // string end (string is in procces and we hit 39)
+                if (isString) {
+
+                    ++this.column;
+
+                    // string end 1 before single quote
+                    endLocation = new Location(this.line, this.column - 1);
+                    symbols.add(new Symbol(this.startLocation, endLocation, C_STRING, this.word.substring(1, this.word.length())));
+                    
+                    // reset
+                    this.word = "";
+                    this.startLocation = new Location(this.line, this.column);
+                    isString = false;
+                    continue;
+                }
+                // string start
+                else {
+                    if (word.length() > 0) 
+                    this.processWord();
+
+                    this.word = "";
+                    // start of string is after single quote
+                    this.startLocation = new Location(this.line, this.column + 1);
+                    isString = true;
+                }
+            }
+            // if word is string
+            if (isString) {
+
+                // check if end of file
+                if (i == (this.source.length() - 1))
+                    Report.error(new Position(startLocation, new Location(this.line, this.column)), "String is not finnished with single quote.");                    
+
+                if (letter == '\n') 
+                    Report.error(new Position(new Location(this.line, this.column), new Location(this.line, this.column)), "String doesn't support end line.");
+
+                if (letter < 32 || letter > 126)
+                    Report.error(new Position(new Location(this.line, this.column), new Location(this.line, this.column)), "String contains a forbiden character.");
+
+                this.word += letter;
+                ++this.column;
+                continue;
+            }
+
+            // comment
+            if (letter ==  35 && !isComment) {
+
+                if (word.length() > 0) 
+                this.processWord();
+
+                // start of string is after single quote
+                this.startLocation = new Location(this.line, this.column + 1);
+
+                isComment = true;
+
+            }
+            // if word is comment 
+            if (isComment) {
+
+                this.word += letter;
+                ++this.column;
+                
+                if (letter == '\n') {
+                    ++this.line;
+                    this.column = 1;
+
+                    // comment includes break line but ends one before it
+                    //endLocation = new Location(this.line, this.column - 1);
+                    // there is no comment type
+                    //symbols.add(new Symbol(this.startLocation, endLocation , C_STRING, this.word));
+
+                    // reset
+                    isComment = false;
+                    this.word = "";
+                    this.startLocation = new Location(this.line, this.column);
+                }               
+                
+                continue;
+            }
+
+
             // it has to be done this way sice operators like semicoloumn arent separated with space
-            if (letter == '+')
+            else if (letter == '+')
                 this.addOperator(OP_ADD, String.valueOf(letter));
             else if (letter == '-') 
                 this.addOperator(OP_SUB, String.valueOf(letter));
@@ -125,7 +247,7 @@ public class Lexer {
                 
             // dvojni
             else if (letter == '!') {
-                if (this.source.charAt(i + 1) == '=') {
+                if (i != (this.source.length() - 1) && this.source.charAt(i + 1) == '=') {
                     this.addOperator(OP_NEQ, "!=");
                     i++;
                 }
@@ -133,7 +255,7 @@ public class Lexer {
                     this.addOperator(OP_NOT, String.valueOf(letter));
             }
             else if (letter == '=') {
-                if (this.source.charAt(i + 1) == '=') {
+                if (i != (this.source.length() - 1) && this.source.charAt(i + 1) == '=') {
                     this.addOperator(OP_EQ, "==");
                     i++;
                 }
@@ -141,7 +263,7 @@ public class Lexer {
                     this.addOperator(OP_ASSIGN, String.valueOf(letter));
             }            
             else if (letter == '<') {
-                if (this.source.charAt(i + 1) == '=') {
+                if (i != (this.source.length() - 1) && this.source.charAt(i + 1) == '=') {
                     this.addOperator(OP_LEQ, "<=");
                     i++;
                 }
@@ -149,7 +271,7 @@ public class Lexer {
                     this.addOperator(OP_LT, String.valueOf(letter));
             }            
             else if (letter == '>') {
-                if (this.source.charAt(i + 1) == '=') {
+                if (i != (this.source.length() - 1) && this.source.charAt(i + 1) == '=') {
                     this.addOperator(OP_GEQ, ">=");
                     i++;
                 }
@@ -203,6 +325,12 @@ public class Lexer {
                 ++this.column;
             }            
         }
+
+        // final word
+        if (word.length() > 0 && !isComment) 
+            this.processWord();
+
+        symbols.add(new Symbol(this.startLocation, endLocation, EOF, "EOF"));  
 
         return symbols;
     }
