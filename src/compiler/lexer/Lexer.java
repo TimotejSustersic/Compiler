@@ -88,17 +88,23 @@ public class Lexer {
 
             char letter = this.word.charAt(i);
 
-            if (letter < 48 || letter > 57) {
-                
+            if (letter < 48 || letter > 57)                 
                 return false;
-            }
         }
         return true;
     }
 
-    // if the word is a string
-    public boolean isString() {
-        return false;
+    // if the word is a identifier // mogoce raj nared da crke preverja in da ne gre skos skozi zanke
+    // sprotno preverjanje je implementirano ampak ne vem ce dela u nulo, tole pa 100% dela ampak je velik pocasnej
+    public boolean isIdent() {
+        for (int i = 1; i < this.word.length(); i++) {
+
+            char letter = this.word.charAt(i);
+
+            if (!((letter >= 65 && letter <= 90) || (letter >= 97 && letter <= 122) || (letter >= 48 && letter <= 57) || letter == 95))                 
+                return false;
+        }
+        return true;
     }
 
     // start location is neccesery mybe endLocation will become too
@@ -115,8 +121,10 @@ public class Lexer {
                 symbols.add(new Symbol(this.startLocation, endLocation, C_INTEGER, this.word));   
             else
                 Report.error(new Position(this.startLocation, this.startLocation), "IDENTIFIER can't start with an integer.");           
-        else 
-            symbols.add(new Symbol(this.startLocation, endLocation, IDENTIFIER, this.word));        
+        else// if (this.isIdent())
+            symbols.add(new Symbol(this.startLocation, endLocation, IDENTIFIER, this.word)); 
+        //else
+            //Report.error(new Position(this.startLocation, endLocation), "IDENTIFIER has invalid character.");           
     }
 
     /**
@@ -125,11 +133,6 @@ public class Lexer {
      * @return seznam leksikalnih simbolov.
      */
     public List<Symbol> scan() {
-
-        // first check if souce code has an ending
-        //if (this.source.length() < 3 || !this.source.substring(this.source.length() - 3, this.source.length()).equals("EOF"))
-            //Report.error("File is missing and EOF ending.");
-
         this.symbols = new ArrayList<Symbol>();
         
         // current symbol
@@ -302,7 +305,7 @@ public class Lexer {
                 this.addOperator(OP_COMMA, String.valueOf(letter));
 
             // space or endLine
-            else if (letter == ' ' || letter == '\n' || letter == '\r') {
+            else if (letter == ' ' || letter == '\n' || letter == '\r' || letter == '\t') {
 
                 if (word.length() > 0) 
                    this.processWord();
@@ -311,6 +314,9 @@ public class Lexer {
                 if (letter == '\n') {
                     ++this.line;
                     this.column = 1;
+                }
+                else if (letter == '\t') {
+                    this.column += 4;
                 }
                 else {
                     ++this.column;
@@ -321,6 +327,9 @@ public class Lexer {
                 this.startLocation = new Location(this.line, this.column);
             }
             else {
+                if (!((letter >= 65 && letter <= 90) || (letter >= 97 && letter <= 122) || (letter >= 48 && letter <= 57) || letter == 95))                 
+                    Report.error(new Position(new Location(this.line, this.column), new Location(this.line, this.column)), "Invalid character.");
+
                 this.word += letter;
                 ++this.column;
             }            
