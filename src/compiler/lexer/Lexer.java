@@ -339,7 +339,7 @@ public class Lexer {
         if (word.length() > 0 && !isComment) 
             this.processWord();
 
-        symbols.add(new Symbol(this.startLocation, endLocation, EOF, "EOF"));  
+        symbols.add(new Symbol(this.startLocation, endLocation, EOF, "$"));  
 
         return symbols;
     }
