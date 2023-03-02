@@ -74,7 +74,7 @@ public class Lexer {
         if (operator.length() == 2)
             ++this.column;
 
-        var endLocation = new Location(this.line, this.column - 1);        
+        var endLocation = new Location(this.line, this.column);        
         symbols.add(new Symbol(this.startLocation, endLocation, tokenType, operator));
 
         // update start
@@ -109,7 +109,7 @@ public class Lexer {
 
     // start location is neccesery mybe endLocation will become too
     public void processWord() {
-        var endLocation = new Location(this.line, this.column - 1);
+        var endLocation = new Location(this.line, this.column);
         if (keywordMapping.containsKey(this.word)) 
             symbols.add(new Symbol(this.startLocation, endLocation, keywordMapping.get(this.word), this.word));
         //else if (this.word.equals("EOF")) 
@@ -155,8 +155,8 @@ public class Lexer {
 
                     ++this.column;
 
-                    // string end 1 before single quote
-                    endLocation = new Location(this.line, this.column - 1);
+                    // string dont end before because if you only have quote location will be from 1:2 - 1:1 and its not ok
+                    endLocation = new Location(this.line, this.column);
                     symbols.add(new Symbol(this.startLocation, endLocation, C_STRING, this.word.substring(1, this.word.length())));
                     
                     // reset
@@ -172,7 +172,7 @@ public class Lexer {
 
                     this.word = "";
                     // start of string is after single quote
-                    this.startLocation = new Location(this.line, this.column + 1);
+                    this.startLocation = new Location(this.line, this.column);
                     isString = true;
                 }
             }
