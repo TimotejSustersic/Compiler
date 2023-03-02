@@ -153,17 +153,25 @@ public class Lexer {
                 // string end (string is in procces and we hit 39)
                 if (isString) {
 
-                    ++this.column;
+                    // next is also 39 than its still string
+                    if ((i + 1) < this.source.length() && this.source.charAt(i + 1) == 39 ) { 
+                        this.word += letter;
+                        i++;
+                        continue;
+                    }
+                    else {
+                        ++this.column;
 
-                    // string dont end before because if you only have quote location will be from 1:2 - 1:1 and its not ok
-                    endLocation = new Location(this.line, this.column);
-                    symbols.add(new Symbol(this.startLocation, endLocation, C_STRING, this.word.substring(1, this.word.length())));
-                    
-                    // reset
-                    this.word = "";
-                    this.startLocation = new Location(this.line, this.column);
-                    isString = false;
-                    continue;
+                        // string dont end before because if you only have quote location will be from 1:2 - 1:1 and its not ok
+                        endLocation = new Location(this.line, this.column);
+                        symbols.add(new Symbol(this.startLocation, endLocation, C_STRING, this.word.substring(1, this.word.length())));
+                        
+                        // reset
+                        this.word = "";
+                        this.startLocation = new Location(this.line, this.column);
+                        isString = false;
+                        continue;                  
+                    }
                 }
                 // string start
                 else {
