@@ -154,10 +154,12 @@ public class Lexer {
                 if (isString) {
 
                     // next is also 39 than its still string
-                    if ((i + 1) < this.source.length() && this.source.charAt(i + 1) == 39 ) { 
-                        this.word += letter;
-                        i++;
-                        continue;
+                    if ((i + 1) < this.source.length() && this.source.charAt(i + 1) == 39 && word.length() > 0) { 
+                        //this.word += letter;
+                        ++i;
+                        letter = this.source.charAt(i);
+                        ++this.column;
+                        //continue;
                     }
                     else {
                         ++this.column;
@@ -188,8 +190,8 @@ public class Lexer {
             if (isString) {
 
                 // check if end of file
-                if (i == (this.source.length() - 1))
-                    Report.error(new Position(startLocation, new Location(this.line, this.column)), "String is not finnished with single quote.");                    
+                if ((i + 1) >= this.source.length())
+                    Report.error(new Position(startLocation, new Location(this.line, this.column + 1)), "String is not finnished with single quote.");                    
 
                 if (letter == '\n') 
                     Report.error(new Position(new Location(this.line, this.column), new Location(this.line, this.column)), "String doesn't support end line.");

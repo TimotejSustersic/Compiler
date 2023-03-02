@@ -9,7 +9,7 @@
             "name": "Launch Main",
             "request": "launch",
             "mainClass": "Main",
-            "projectName": "Compiler",
+            "projectName": "PINSCompiler_8907c570",
             "args": "PINS code.txt --dump LEX"
         }
     ]
