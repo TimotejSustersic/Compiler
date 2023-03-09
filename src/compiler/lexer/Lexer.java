@@ -146,7 +146,6 @@ public class Lexer {
         for (int i = 0; i < this.source.length(); i++) {
 
             char letter = this.source.charAt(i);
-
             
             // string inside 39 == '
             if (letter == 39) {
@@ -235,11 +234,9 @@ public class Lexer {
                     isComment = false;
                     this.word = "";
                     this.startLocation = new Location(this.line, this.column);
-                }               
-                
+                }
                 continue;
             }
-
 
             // it has to be done this way sice operators like semicoloumn arent separated with space
             else if (letter == '+')
@@ -353,6 +350,4 @@ public class Lexer {
 
         return symbols;
     }
-
-
 }
