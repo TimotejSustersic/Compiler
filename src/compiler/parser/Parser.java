@@ -23,6 +23,8 @@ public class Parser {
      */
     private final List<Symbol> symbols;
 
+    private int currIndex = 0;
+
     /**
      * Ciljni tok, kamor izpisujemo produkcije. Če produkcij ne želimo izpisovati,
      * vrednost opcijske spremenljivke nastavimo na Optional.empty().
@@ -31,7 +33,7 @@ public class Parser {
 
     public Parser(List<Symbol> symbols, Optional<PrintStream> productionsOutputStream) {
         requireNonNull(symbols, productionsOutputStream);
-        this.symbols = symbols;
+        this.symbols = symbols;       
         this.productionsOutputStream = productionsOutputStream;
     }
 
@@ -44,9 +46,8 @@ public class Parser {
 
     private void parseSource() {
 
-        for (Symbol symbol: this.symbols) {
-            this.dump(symbol.toString());
-        }
+        this.dump("source -> definitions");
+        this.parseDefinitions();
     }
 
     /**
@@ -59,64 +60,92 @@ public class Parser {
     }    
     
     /**
-     * Preveri
+     * Preveri leksem
      */
-    private boolean check(TokenType production) {
-        return true;
+    private boolean check(TokenType tokenType) {
+        return this.symbols.get(currIndex).tokenType == tokenType;
+    }     
+
+    /**
+     * Preveri leksem
+     */
+    private boolean checkSkip(TokenType tokenType) {
+        if (this.check(tokenType)) {
+            this.skip();
+            return true;
+        }
+        return false;
     }    
 
     /**
-     * Skipi
+     * Preskoci leksem
      */
     private void skip() {
-       
+        this.currIndex++;
+    }
+
+    /**
+     * Preskoci leksem
+     */
+    private Position getPosition() {
+        return this.symbols.get(this.currIndex).position;
     }
 
     private void parseDefinitions() {
-        this.dump("definitions->definition definitions' ");
+        this.dump("definitions -> definition definitions2 ");
         this.parseDefinition();
-        this.parseDefinition_();
+        this.parseDefinition2();
     }
-    
-    private void parseDefinition() {
-        if(this.check(KW_TYP)) {
-            this.dump("def.->type_def");
-            this.skip();
-            this.parseTypeDef();
-        }
-        else if (this.check(KW_FUN))
-            this.dump("//def.->type_def");
-        else if (this.check(IDENTIFIER))
-            this.dump("//def.->type_def");
-        else 
-            Report.error("neki");
-    }
-    
-    private void parseTypeDef() {
 
-        this.dump("type_def->typ id : X");
-
-        if (this.check(IDENTIFIER)) {
-            this.skip();
-        //
-        }
-        else 
-            Report.error("n");
-    }
-            
-    private void parseDefinition_() {
-        
+    private void parseDefinition2() {        
         if (this.check(OP_SEMICOLON)) {
-            this.dump("definitions-> definitions");
+            this.dump("definitions_-> ; definitions");
             this.skip();
             // zdej pa lahko
             this.parseDefinitions();
             // ali pa napisemo ze njegovo izpeljavo
-            this.parseDefinition();
-            this.parseDefinition_();
+            //this.parseDefinition();
+            //this.parseDefinition2();
         }
-        else {
-            this.dump("definitions'->e");
+        else 
+            this.dump("definitions2 -> e");
+    }
+
+    private void parseDefinition() {
+        if(this.check(KW_TYP)) {
+            this.dump("definition -> type_definition");
+            this.skip();
+            this.parseTypeDef();
         }
+        else if (this.check(KW_FUN)) {
+            this.dump("definition -> function_definition");
+            this.skip();
+            //this.parseTypeFun();
+        }
+        else if (this.check(KW_VAR)) {
+            this.dump("definition -> variable_definition");
+            this.skip();
+            //this.parseTypeVar();
+        }
+        else 
+            Report.error(this.getPosition(), "Wrong definition.");
+    }
+    
+    private void parseTypeDef() {
+
+        this.dump("type_definition -> typ identifier : type");
+        // typ is alredy skiped
+        if (this.checkSkip(IDENTIFIER))
+            if (this.checkSkip(OP_COLON)) {
+               this.parseType();
+            }
+            else 
+                Report.error(this.getPosition(), "Missing colon.");
+        else 
+            Report.error(this.getPosition(), "Missing identifier.");
+    }
+
+    private void parseType() {
+        
     }
 }
