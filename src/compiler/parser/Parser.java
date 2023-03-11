@@ -44,9 +44,9 @@ public class Parser {
 
     private void parseSource() {
 
-        //for (Symbol symbol: this.symbols) {
-        //    this.dump("ups");
-        //}
+        for (Symbol symbol: this.symbols) {
+            this.dump(symbol.toString());
+        }
     }
 
     /**

@@ -82,29 +82,25 @@ public class Lexer {
     }
 
     // if the word is a integer
-    public boolean isInteger() {
+    public void proccesInteger() {
 
+        var endLocation = new Location(this.line, this.column);
+
+        // first alredy checked
         for (int i = 1; i < this.word.length(); i++) {
 
             char letter = this.word.charAt(i);
 
-            if (letter < 48 || letter > 57)                 
-                return false;
+            if (letter < 48 || letter > 57) {
+
+                var middleLocation = new Location(this.line, this.column - this.word.length() + i);
+
+                symbols.add(new Symbol(this.startLocation, middleLocation, C_INTEGER, this.word.substring(0, i)));  
+                symbols.add(new Symbol(middleLocation, endLocation, IDENTIFIER, this.word.substring(i)));
+                return;
+            }
         }
-        return true;
-    }
-
-    // if the word is a identifier // mogoce raj nared da crke preverja in da ne gre skos skozi zanke
-    // sprotno preverjanje je implementirano ampak ne vem ce dela u nulo, tole pa 100% dela ampak je velik pocasnej
-    public boolean isIdent() {
-        for (int i = 1; i < this.word.length(); i++) {
-
-            char letter = this.word.charAt(i);
-
-            if (!((letter >= 65 && letter <= 90) || (letter >= 97 && letter <= 122) || (letter >= 48 && letter <= 57) || letter == 95))                 
-                return false;
-        }
-        return true;
+        symbols.add(new Symbol(this.startLocation, endLocation, C_INTEGER, this.word));  
     }
 
     // start location is neccesery mybe endLocation will become too
@@ -117,14 +113,9 @@ public class Lexer {
         else if (this.word.equals("true") || this.word.equals("false") )
             symbols.add(new Symbol(this.startLocation, endLocation, C_LOGICAL, this.word));
         else if (this.word.charAt(0) >= 48 && this.word.charAt(0) <= 57) 
-            if (this.isInteger())
-                symbols.add(new Symbol(this.startLocation, endLocation, C_INTEGER, this.word));   
-            else
-                Report.error(new Position(this.startLocation, this.startLocation), "IDENTIFIER can't start with an integer.");           
-        else// if (this.isIdent())
-            symbols.add(new Symbol(this.startLocation, endLocation, IDENTIFIER, this.word)); 
-        //else
-            //Report.error(new Position(this.startLocation, endLocation), "IDENTIFIER has invalid character.");           
+            this.proccesInteger();                     
+        else
+            symbols.add(new Symbol(this.startLocation, endLocation, IDENTIFIER, this.word));         
     }
 
     /**
@@ -146,6 +137,7 @@ public class Lexer {
         for (int i = 0; i < this.source.length(); i++) {
 
             char letter = this.source.charAt(i);
+
             
             // string inside 39 == '
             if (letter == 39) {
@@ -204,7 +196,7 @@ public class Lexer {
             }
 
             // comment
-            if (letter ==  35 && !isComment) {
+            if (letter == 35 && !isComment) {
 
                 if (word.length() > 0) 
                 this.processWord();
@@ -234,9 +226,11 @@ public class Lexer {
                     isComment = false;
                     this.word = "";
                     this.startLocation = new Location(this.line, this.column);
-                }
+                }               
+                
                 continue;
             }
+
 
             // it has to be done this way sice operators like semicoloumn arent separated with space
             else if (letter == '+')
@@ -350,4 +344,6 @@ public class Lexer {
 
         return symbols;
     }
+
+
 }
