@@ -96,7 +96,7 @@ public class Parser {
 
     // DONE
     private void parseDefinitions() {
-        this.dump("definitions -> definition definitions2 ");
+        this.dump("definitions -> definition definitions2");
         this.parseDefinition();
         this.parseDefinition2();
     }
@@ -104,7 +104,7 @@ public class Parser {
     // DONE
     private void parseDefinition2() {        
         if (this.checkSkip(OP_SEMICOLON)) {
-            this.dump("definitions_-> ';' definitions");
+            this.dump("definitions2 -> ';' definitions");
             // zdej pa lahko
             this.parseDefinitions();
             // ali pa napisemo ze njegovo izpeljavo
@@ -158,7 +158,7 @@ public class Parser {
                     if (this.checkSkip(OP_COLON)) {
                         this.dump(" ')' ':' type");
                         this.parseType();
-                        if (this.checkSkip(OP_EQ)) {
+                        if (this.checkSkip(OP_ASSIGN)) {
                             this.dump(" '=' expression");
                             this.parseExpression();
                         }
@@ -194,11 +194,11 @@ public class Parser {
     private void parseType() {
         if (this.checkSkip(IDENTIFIER)) 
             this.dump("type -> identifier");
-        if (this.checkSkip(AT_LOGICAL))
+        else if (this.checkSkip(AT_LOGICAL))
             this.dump("type -> logical");
-        if (this.checkSkip(AT_INTEGER))
+        else if (this.checkSkip(AT_INTEGER))
             this.dump("type -> integer");
-        if (this.checkSkip(AT_STRING))
+        else if (this.checkSkip(AT_STRING))
             this.dump("type -> string");
         else if (this.checkSkip(KW_ARR))
             if (this.checkSkip(OP_LBRACKET))
@@ -217,10 +217,95 @@ public class Parser {
             Report.error(this.getPosition(), "Wrong type");
     }
     
+    // DONE
     private void parseParameters() {
-
-    }    
+        this.dump("parameters -> parameter parameters2");
+        this.parseParameter();
+        this.parseParameters2();
+    }
+    
+    // DONE
+    private void parseParameters2() {
+        if (this.checkSkip(OP_COMMA)) {
+            this.dump("parameters2 -> ',' parameters");
+            this.parseParameters();
+        }
+        else 
+            this.dump("parameters2 -> e");
+    }      
+    
+    // DONE
+    private void parseParameter() {
+        if (this.checkSkip(IDENTIFIER))
+            if (this.checkSkip(OP_COLON)) {
+                this.dump("identifier ':' type");
+                this.parseType();
+            }
+            else
+                Report.error(this.getPosition(), "Wrong parameter: Expected ':' (colon)");
+        else
+            Report.error(this.getPosition(), "Wrong parameter: Expected identifier");
+    }  
+    
+    // DONE
     private void parseExpression() {
+        this.dump("expression -> logical_ior_expression expression2");
+        this.parseLogicalIorExpression();
+        this.parseExpression2();
+    }       
+
+    // DONE
+    private void parseExpression2() {
+        if (this.checkSkip(OP_LBRACE))
+            if (this.checkSkip(KW_WHERE)) {
+                this.dump("expression2 -> '{' WHERE definitions");
+                this.parseDefinitions();
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump(" '}'");
+                else
+                    Report.error(this.getPosition(), "Wrong expression: Expected '}' (right curly bracket)");
+            }
+            else
+                Report.error(this.getPosition(), "Wrong expression: Expected WHERE");
+        else
+            this.dump("expression2 -> e");
+    }    
+
+    // DONE
+    private void parseLogicalIorExpression() {
+        this.dump("logical_ior_expression -> logical_and_expression logical_ior_expression2");
+        this.parseLogicalAndExpression();
+        this.parseLogicalIorExpression2();
+    }
+
+    // DONE
+    private void parseLogicalIorExpression2() {
+        if (this.checkSkip(OP_OR)) {
+            this.dump("logical_ior_expression2 -> '|' logical_ior_expression");
+            this.parseLogicalIorExpression();
+        }
+        else                     
+            this.dump("logical_ior_expression2 -> e");
+    }
+
+    // DONE
+    private void parseLogicalAndExpression() {
+        this.dump("logical_and_expression -> compare_expression logical_and_expression2");
+        this.parseCompareExpression();
+        this.parseLogicalAndExpression2();
+    }
+
+    // DONE
+    private void parseLogicalAndExpression2() {
+        if (this.checkSkip(OP_AND)) {
+            this.dump("logical_and_expression2 -> '&' logical_and_expression");
+            this.parseLogicalAndExpression();
+        }
+        else                     
+            this.dump("logical_and_expression2 -> e");
+    }
+
+    private void parseCompareExpression() {
 
     }
 }
