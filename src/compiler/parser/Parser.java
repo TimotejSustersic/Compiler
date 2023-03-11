@@ -142,9 +142,9 @@ public class Parser {
                 this.parseType();
             }
             else 
-                Report.error(this.getPosition(), "Wrong type_definition: Missing ':' (colon).");
+                Report.error(this.getPosition(), "Wrong type_definition: Expected ':' (colon).");
         else 
-            Report.error(this.getPosition(), "Wrong type_definition: Missing identifier.");
+            Report.error(this.getPosition(), "Wrong type_definition: Expected identifier.");
     }
 
     // DONE
@@ -163,17 +163,17 @@ public class Parser {
                             this.parseExpression();
                         }
                         else 
-                            Report.error(this.getPosition(), "Wrong function_definition: Missing '=' (equals).");
+                            Report.error(this.getPosition(), "Wrong function_definition: Expected '=' (equals).");
                     } 
                     else 
-                        Report.error(this.getPosition(), "Wrong function_definition: Missing ':' (colon).");
+                        Report.error(this.getPosition(), "Wrong function_definition: Expected ':' (colon).");
                 else                 
-                    Report.error(this.getPosition(), "Wrong function_definition: Missing ')' (right parantheses).");
+                    Report.error(this.getPosition(), "Wrong function_definition: Expected ')' (right parantheses).");
             }
             else 
-                Report.error(this.getPosition(), "Wrong function_definition: Missing '(' (left parantheses).");
+                Report.error(this.getPosition(), "Wrong function_definition: Expected '(' (left parantheses).");
         else 
-            Report.error(this.getPosition(), "Wrong function_definition: Missing identifier.");
+            Report.error(this.getPosition(), "Wrong function_definition: Expected identifier.");
     }    
     
     // DONE
@@ -185,9 +185,9 @@ public class Parser {
                 this.parseType();
             }
             else 
-                Report.error(this.getPosition(), "Wrong variable_definition: Missing ':' (colon).");
+                Report.error(this.getPosition(), "Wrong variable_definition: Expected ':' (colon).");
         else 
-            Report.error(this.getPosition(), "Wrong variable_definition: Missing identifier.");
+            Report.error(this.getPosition(), "Wrong variable_definition: Expected identifier.");
     }
 
     // DONE
@@ -305,7 +305,135 @@ public class Parser {
             this.dump("logical_and_expression2 -> e");
     }
 
+    // DONE
     private void parseCompareExpression() {
+        this.dump("compare_expression -> additive_expression compare_expression2");
+        this.parseAdditiveExpression();
+        this.parseCompareExpression2();
+    }
+    
+    // DONE
+    private void parseCompareExpression2() {
+        if (this.checkSkip(OP_EQ)) {
+            this.dump("compare_expression2 -> '==' additive_expression");
+            this.parseAdditiveExpression();
+        }        
+        else if (this.checkSkip(OP_NEQ)) {
+            this.dump("compare_expression2 -> '!=' additive_expression");
+            this.parseAdditiveExpression();
+        }      
+        else if (this.checkSkip(OP_LEQ)) {
+            this.dump("compare_expression2 -> '<=' additive_expression");
+            this.parseAdditiveExpression();
+        }      
+        else if (this.checkSkip(OP_GEQ)) {
+            this.dump("compare_expression2 -> '>=' additive_expression");
+            this.parseAdditiveExpression();
+        }      
+        else if (this.checkSkip(OP_LT)) {
+            this.dump("compare_expression2 -> '<' additive_expression");
+            this.parseAdditiveExpression();
+        }      
+        else if (this.checkSkip(OP_GT)) {
+            this.dump("compare_expression2 -> '>' additive_expression");
+            this.parseAdditiveExpression();
+        }
+        else                     
+            this.dump("compare_expression2 -> e");
+    }
+
+    // TEST
+    private void parseAdditiveExpression() {
+        this.dump("additive_expression -> multiplicative_expression additive_expression2");
+        this.parseMultiplicativeExpression();
+        this.parseAdditiveExpression2();
+    }
+
+    // TEST
+    private void parseAdditiveExpression2() {
+        if (this.checkSkip(OP_ADD)) {
+            this.dump("additive_expression2 -> '+' additive_expression");
+            this.parseAdditiveExpression();
+        }
+        else if (this.checkSkip(OP_SUB)) {
+            this.dump("additive_expression2 -> '-' additive_expression");
+            this.parseAdditiveExpression();
+        }
+        else
+            this.dump("additive_expression2 -> e");
+    }
+
+    // TEST
+    private void parseMultiplicativeExpression() {
+        this.dump("multiplicative_expression -> prefix_expression multiplicative_expression2");
+        this.parsePrefixExpression();
+        this.parseMultiplicativeExpression2();
+    }
+
+    // TEST
+    private void parseMultiplicativeExpression2() {
+        if (this.checkSkip(OP_MUL)) {
+            this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
+            this.parseMultiplicativeExpression();
+        }
+        else if (this.checkSkip(OP_DIV)) {
+            this.dump("multiplicative_expression2 -> '/' multiplicative_expression");
+            this.parseMultiplicativeExpression();
+        }
+        else if (this.checkSkip(OP_MOD)) {
+            this.dump("multiplicative_expression2 -> '%' multiplicative_expression");
+            this.parseMultiplicativeExpression();
+        }
+        else
+            this.dump("multiplicative_expression2 -> e");
+    }
+
+    // DONE
+    private void parsePrefixExpression() {
+        if (this.checkSkip(OP_ADD)){
+            this.dump("prefix_expression -> '+' prefix_expression");
+            this.parsePrefixExpression();
+        }
+        if (this.checkSkip(OP_SUB)){
+            this.dump("prefix_expression -> '-' prefix_expression");
+            this.parsePrefixExpression();
+        }
+        if (this.checkSkip(OP_NOT)){
+            this.dump("prefix_expression -> '!' prefix_expression");
+            this.parsePrefixExpression();
+        }
+        else {
+            this.dump("prefix_expression -> postfix_expression");
+            this.parsePostfixExpression();
+        }
+    }
+
+    // DONE
+    private void parsePostfixExpression() {
+        this.dump("postfix_expression -> atom_expression postfix_expression2");
+        this.parseAtomExpression();
+        this.parsePostfixExpression2();
+    }
+
+    // DONE
+    private void parsePostfixExpression2() {
+        if (this.checkSkip(OP_LBRACKET)) {
+            this.dump("postfix_expression2 -> '[' expression");
+            this.parseExpression();
+            if (this.checkSkip(OP_RBRACKET)){
+                this.dump(" ']' postfix_expression2");
+                this.parsePostfixExpression2();
+            }
+            else 
+                Report.error(this.getPosition(), "Wrong postfix_expression: Expected ']' (right bracket).");
+        }  
+        else
+            this.dump("postfix_expression2 -> e");
+    }
+
+    // TODO
+    private void parseAtomExpression() {
 
     }
+
 }
