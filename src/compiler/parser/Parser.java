@@ -48,6 +48,9 @@ public class Parser {
 
         this.dump("source -> definitions");
         this.parseDefinitions();
+
+        // nisem vedu a bi blo bol delat error je tko da ti pove kaj manjka/prcakuje alli celotno strukture k jo prckuje
+        // in sem se odlocu da pove samo za naslednji pricakovani leksem
     }
 
     /**
@@ -91,16 +94,17 @@ public class Parser {
         return this.symbols.get(this.currIndex).position;
     }
 
+    // DONE
     private void parseDefinitions() {
         this.dump("definitions -> definition definitions2 ");
         this.parseDefinition();
         this.parseDefinition2();
     }
 
+    // DONE
     private void parseDefinition2() {        
-        if (this.check(OP_SEMICOLON)) {
-            this.dump("definitions_-> ; definitions");
-            this.skip();
+        if (this.checkSkip(OP_SEMICOLON)) {
+            this.dump("definitions_-> ';' definitions");
             // zdej pa lahko
             this.parseDefinitions();
             // ali pa napisemo ze njegovo izpeljavo
@@ -111,41 +115,112 @@ public class Parser {
             this.dump("definitions2 -> e");
     }
 
+    // DONE
     private void parseDefinition() {
-        if(this.check(KW_TYP)) {
+        if(this.checkSkip(KW_TYP)) {
             this.dump("definition -> type_definition");
-            this.skip();
             this.parseTypeDef();
         }
-        else if (this.check(KW_FUN)) {
+        else if (this.checkSkip(KW_FUN)) {
             this.dump("definition -> function_definition");
-            this.skip();
-            //this.parseTypeFun();
+            this.parseFunDef();
         }
-        else if (this.check(KW_VAR)) {
+        else if (this.checkSkip(KW_VAR)) {
             this.dump("definition -> variable_definition");
-            this.skip();
-            //this.parseTypeVar();
+            this.parseVarDef();
         }
         else 
             Report.error(this.getPosition(), "Wrong definition.");
     }
     
-    private void parseTypeDef() {
-
-        this.dump("type_definition -> typ identifier : type");
+    // DONE
+    private void parseTypeDef() {        
         // typ is alredy skiped
         if (this.checkSkip(IDENTIFIER))
             if (this.checkSkip(OP_COLON)) {
-               this.parseType();
+                this.dump("type_definition -> typ identifier ':' type");
+                this.parseType();
             }
             else 
-                Report.error(this.getPosition(), "Missing colon.");
+                Report.error(this.getPosition(), "Wrong type_definition: Missing ':' (colon).");
         else 
-            Report.error(this.getPosition(), "Missing identifier.");
+            Report.error(this.getPosition(), "Wrong type_definition: Missing identifier.");
     }
 
+    // DONE
+    private void parseFunDef() {
+        // fun is alredy skiped
+        if (this.checkSkip(IDENTIFIER))
+            if (this.checkSkip(OP_LPARENT)) {    
+                this.dump("function_definition -> fun identifier '(' parameters");            
+                this.parseParameters();
+                if (this.checkSkip(OP_RPARENT))
+                    if (this.checkSkip(OP_COLON)) {
+                        this.dump(" ')' ':' type");
+                        this.parseType();
+                        if (this.checkSkip(OP_EQ)) {
+                            this.dump(" '=' expression");
+                            this.parseExpression();
+                        }
+                        else 
+                            Report.error(this.getPosition(), "Wrong function_definition: Missing '=' (equals).");
+                    } 
+                    else 
+                        Report.error(this.getPosition(), "Wrong function_definition: Missing ':' (colon).");
+                else                 
+                    Report.error(this.getPosition(), "Wrong function_definition: Missing ')' (right parantheses).");
+            }
+            else 
+                Report.error(this.getPosition(), "Wrong function_definition: Missing '(' (left parantheses).");
+        else 
+            Report.error(this.getPosition(), "Wrong function_definition: Missing identifier.");
+    }    
+    
+    // DONE
+    private void parseVarDef() {
+        // var is alredy skiped
+        if (this.checkSkip(IDENTIFIER))
+            if (this.checkSkip(OP_COLON)) {
+                this.dump("variable_definition -> var identifer ':' type");
+                this.parseType();
+            }
+            else 
+                Report.error(this.getPosition(), "Wrong variable_definition: Missing ':' (colon).");
+        else 
+            Report.error(this.getPosition(), "Wrong variable_definition: Missing identifier.");
+    }
+
+    // DONE
     private void parseType() {
-        
+        if (this.checkSkip(IDENTIFIER)) 
+            this.dump("type -> identifier");
+        if (this.checkSkip(AT_LOGICAL))
+            this.dump("type -> logical");
+        if (this.checkSkip(AT_INTEGER))
+            this.dump("type -> integer");
+        if (this.checkSkip(AT_STRING))
+            this.dump("type -> string");
+        else if (this.checkSkip(KW_ARR))
+            if (this.checkSkip(OP_LBRACKET))
+                if (this.checkSkip(C_INTEGER))
+                    if (this.checkSkip(OP_RBRACKET))  {
+                        this.dump("type -> arr '[' int_const ']' type");
+                        this.parseType(); 
+                    }
+                    else
+                        Report.error(this.getPosition(), "Wrong type: Expected ']' (right bracket)");                 
+                else
+                    Report.error(this.getPosition(), "Wrong type: Expected int_constant");                
+            else
+                Report.error(this.getPosition(), "Wrong type: Expected '[' (left bracket)");                 
+        else 
+            Report.error(this.getPosition(), "Wrong type");
+    }
+    
+    private void parseParameters() {
+
+    }    
+    private void parseExpression() {
+
     }
 }

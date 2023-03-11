@@ -12,13 +12,23 @@ definition -> type_definition
 definition -> function_definition
 definition -> variable_definition
 //************************************************//
-type_definition -> typ identifier : type
+type_definition -> typ identifier ':' type .
 //************************************************//
-type -> identifier
-type -> logical
-type -> integer
-type -> string
-type -> arr [ int_const ] type
+type -> identifier .
+type -> logical .
+type -> integer .
+type -> string .
+type -> arr '[' int_const ']' type .
+//************************************************//
+function_definition -> fun identifier '(' parameters ')' ':' type '=' expression .
+//************************************************//
+parameters -> parameter
+parameters -> parameters ',' parameter
+//************************************************//
+parameter -> identifier ':' type
+//************************************************//
+expression !logical ior expression
+expression !logical ior expression { WHERE definitions }
 //************************************************//
 //************************************************//
 //************************************************//
@@ -26,7 +36,4 @@ type -> arr [ int_const ] type
 //************************************************//
 //************************************************//
 //************************************************//
-//************************************************//
-//************************************************//
-//************************************************//
-//************************************************//
+variable_definition -> var identifer ':' type .
