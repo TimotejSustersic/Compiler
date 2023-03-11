@@ -99,5 +99,37 @@ prefix_expression -> postfix_expression .
 postfix_expression -> atom_expression postfix_expression2 .
 postfix_expression2 -> '[' expression ']' postfix_expression2 | e .
 //************************************************//
+atom_expression -> log_constant .
+atom_expression -> int_constant .
+atom_expression -> str_constant .
+//**//
+*atom_expression -> identifier .
+*atom_expression -> identifier '(' expressions ')' .
+//
+atom_expression -> identifier atom_expression_Identifier .
+atom_expression_Identifier -> '(' expressions ')' | e .
+//**//
+*atom_expression -> '{' expression '=' expression '}' .
+*atom_expression -> '{' if expression then expression '}' .
+*atom_expression -> '{' if expression then expression else expression '}' .
+*atom_expression -> '{' while expression ':' expression '}' .
+*atom_expression -> '{' for identifier '=' expression ',' expression ',' expression ':' expression '}' .
+//
+atom_expression -> '{' atom_expression_Rbracket .
+
+atom_expression_Rbracket -> if expression then expression atom_expression_Rbracket_IF
+| expression '=' expression '}'
+| while expression ':' expression '}'
+| for identifier '=' expression ',' expression ',' expression ':' expression '}' .
+
+atom_expression_Rbracket_IF -> '}' | else  expression '}' .
+//**//
+atom_expression -> '(' expressions ')' .
+//************************************************//
+*expressions -> expression .
+*expressions -> expressions ',' expression .
+//
+expressions -> expression expressions2 .
+expressions2 -> ',' expressions | e .
 //************************************************//
 variable_definition -> var identifer ':' type .

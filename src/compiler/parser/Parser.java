@@ -51,6 +51,12 @@ public class Parser {
 
         // nisem vedu a bi blo bol delat error je tko da ti pove kaj manjka/prcakuje alli celotno strukture k jo prckuje
         // in sem se odlocu da pove samo za naslednji pricakovani leksem
+        
+        // TODO: dej zakomenteri dele k vracajo e k se mi zdi da ga nesmes
+
+        // TODO: vse koncne lekseme dej v narekovaje in v gramatiki in pod rules
+
+        // TODO: Testeri
     }
 
     /**
@@ -176,20 +182,6 @@ public class Parser {
             Report.error(this.getPosition(), "Wrong function_definition: Expected identifier.");
     }    
     
-    // DONE
-    private void parseVarDef() {
-        // var is alredy skiped
-        if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_COLON)) {
-                this.dump("variable_definition -> var identifer ':' type");
-                this.parseType();
-            }
-            else 
-                Report.error(this.getPosition(), "Wrong variable_definition: Expected ':' (colon).");
-        else 
-            Report.error(this.getPosition(), "Wrong variable_definition: Expected identifier.");
-    }
-
     // DONE
     private void parseType() {
         if (this.checkSkip(IDENTIFIER)) 
@@ -436,4 +428,34 @@ public class Parser {
 
     }
 
+    // DONE
+    private void parseExpressions() {
+        this.dump("expressions -> expression expressions2");
+        this.parseExpression();
+        this.parseExpressions2();
+    }
+
+    // DONE
+    private void parseExpressions2() {
+        if (this.checkSkip(OP_COMMA)) {
+            this.dump("expressions2 -> ',' expressions");
+            this.parseExpressions();
+        }
+        else 
+            this.dump("expressions2 -> e ");
+    }
+
+    // DONE
+    private void parseVarDef() {
+        // var is alredy skiped
+        if (this.checkSkip(IDENTIFIER))
+            if (this.checkSkip(OP_COLON)) {
+                this.dump("variable_definition -> var identifer ':' type");
+                this.parseType();
+            }
+            else 
+                Report.error(this.getPosition(), "Wrong variable_definition: Expected ':' (colon).");
+        else 
+            Report.error(this.getPosition(), "Wrong variable_definition: Expected identifier.");
+    }    
 }
