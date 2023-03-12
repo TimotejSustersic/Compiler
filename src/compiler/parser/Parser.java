@@ -465,6 +465,7 @@ public class Parser {
             this.dump("atom_expression_Identifier -> e");
     }
 
+    // DONE
     private void parseAtomExpressionLBracket() {
         if (this.checkSkip(KW_IF)) {
             this.dump("atom_expression_LBracket -> if expression");
@@ -537,7 +538,20 @@ public class Parser {
         }
     }
 
+    // DONE
     private void parseAtomExpressionLBracketIF() {
+        if (this.checkSkip(OP_RBRACE)) 
+            this.dump("'}'");
+        else if (this.checkSkip(KW_ELSE)) {
+            this.dump("'else' expression");
+            this.parseExpression();
+            if (this.checkSkip(OP_RBRACE)) 
+                this.dump("'}'");
+            else                     
+                Report.error(this.getPosition(), "Wrong atom_expression_LBracket_IF: Expected '}' (right curly bracket).");
+        }
+        else 
+            Report.error(this.getPosition(), "Wrong atom_expression_LBracket_IF.");
     }
 
     // DONE
