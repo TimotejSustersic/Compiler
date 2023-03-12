@@ -77,10 +77,10 @@ e .
 additive_expression -> multiplicative_expression additive_expression2 .
 additive_expression2 -> '+' additive_expression | '-' additive_expression | e .
 //************************************************//
-multiplicative_expression -> multiplicative_expression '*' prefix_expression .
-multiplicative_expression -> multiplicative_expression '/' prefix_expression .
-multiplicative_expression -> multiplicative_expression '%' prefix_expression .
-multiplicative_expression -> prefix_expression .
+*multiplicative_expression -> multiplicative_expression '*' prefix_expression .
+*multiplicative_expression -> multiplicative_expression '/' prefix_expression .
+*multiplicative_expression -> multiplicative_expression '%' prefix_expression .
+*multiplicative_expression -> prefix_expression .
 //
 multiplicative_expression -> prefix_expression multiplicative_expression2 .
 multiplicative_expression2 -> 
@@ -117,7 +117,7 @@ atom_expression_Identifier -> '(' expressions ')' | e .
 //
 atom_expression -> '{' atom_expression_LBracket .
 
-atom_expression_LBracket -> if expression then expression atom_expression_LBracket_IF
+atom_expression_LBracket -> 'if' expression 'then' expression atom_expression_LBracket_IF
 | expression '=' expression '}'
 | while expression ':' expression '}'
 | for identifier '=' expression ',' expression ',' expression ':' expression '}' .

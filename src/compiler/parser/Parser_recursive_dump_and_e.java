@@ -78,8 +78,7 @@ public class Parser {
      */
     private boolean checkSkip(TokenType tokenType) {
         if (this.check(tokenType)) {
-            //this.skip();
-            this.currIndex++;
+            this.skip();
             return true;
         }
         return false;
@@ -88,12 +87,12 @@ public class Parser {
     /**
      * Preskoci leksem
      */
-    // private void skip() {
-    //     this.currIndex++;
-    // }
+    private void skip() {
+        this.currIndex++;
+    }
 
     /**
-     * Pridobi pozicijo leksem
+     * Preskoci leksem
      */
     private Position getPosition() {
         return this.symbols.get(this.currIndex).position;
@@ -155,16 +154,18 @@ public class Parser {
     // DONE
     private void parseFunDef() {
         // fun is alredy skiped
-        this.dump("function_definition -> 'fun' identifier '(' parameters ')' ':' type '=' expression"); 
-
         if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_LPARENT)) {                           
+            if (this.checkSkip(OP_LPARENT)) {    
+                this.dump("function_definition -> 'fun' identifier '(' parameters");            
                 this.parseParameters();
                 if (this.checkSkip(OP_RPARENT))
                     if (this.checkSkip(OP_COLON)) {
+                        this.dump(" ')' ':' type");
                         this.parseType();
-                        if (this.checkSkip(OP_ASSIGN)) 
-                            this.parseExpression();                        
+                        if (this.checkSkip(OP_ASSIGN)) {
+                            this.dump(" '=' expression");
+                            this.parseExpression();
+                        }
                         else 
                             Report.error(this.getPosition(), "Wrong function_definition: Expected '=' (equals).");
                     } 
@@ -189,19 +190,19 @@ public class Parser {
             this.dump("type -> 'integer'");
         else if (this.checkSkip(AT_STRING))
             this.dump("type -> 'string'");
-        else if (this.checkSkip(KW_ARR)) {
-            this.dump("type -> 'arr' '[' int_const ']' type");
+        else if (this.checkSkip(KW_ARR))
             if (this.checkSkip(OP_LBRACKET))
                 if (this.checkSkip(C_INTEGER))
-                    if (this.checkSkip(OP_RBRACKET))                     
-                        this.parseType();
+                    if (this.checkSkip(OP_RBRACKET))  {
+                        this.dump("type -> 'arr' '[' int_const ']' type");
+                        this.parseType(); 
+                    }
                     else
                         Report.error(this.getPosition(), "Wrong type: Expected ']' (right bracket)");                 
                 else
                     Report.error(this.getPosition(), "Wrong type: Expected int_constant");                
             else
-                Report.error(this.getPosition(), "Wrong type: Expected '[' (left bracket)");   
-        }              
+                Report.error(this.getPosition(), "Wrong type: Expected '[' (left bracket)");                 
         else 
             Report.error(this.getPosition(), "Wrong type");
     }
@@ -225,10 +226,11 @@ public class Parser {
     
     // DONE
     private void parseParameter() {
-        this.dump("identifier ':' type");
         if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_COLON))
+            if (this.checkSkip(OP_COLON)) {
+                this.dump("identifier ':' type");
                 this.parseType();
+            }
             else
                 Report.error(this.getPosition(), "Wrong parameter: Expected ':' (colon)");
         else
@@ -244,16 +246,17 @@ public class Parser {
 
     // DONE
     private void parseExpression2() {
-        if (this.checkSkip(OP_LBRACE)) {
-            this.dump("expression2 -> '{' 'WHERE' definitions '}'");
-            if (this.checkSkip(KW_WHERE)) {                
+        if (this.checkSkip(OP_LBRACE))
+            if (this.checkSkip(KW_WHERE)) {
+                this.dump("expression2 -> '{' 'WHERE' definitions");
                 this.parseDefinitions();
-                if (!this.checkSkip(OP_RBRACE))
-                    Report.error(this.getPosition(), "Wrong expression2: Expected '}' (right curly bracket)");
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump(" '}'");
+                else
+                    Report.error(this.getPosition(), "Wrong expression: Expected '}' (right curly bracket)");
             }
             else
-                Report.error(this.getPosition(), "Wrong expression2: Expected WHERE");
-        }
+                Report.error(this.getPosition(), "Wrong expression: Expected WHERE");
         else
             this.dump("expression2 -> e");
     }    
@@ -329,14 +332,14 @@ public class Parser {
             this.dump("compare_expression2 -> e");
     }
 
-    // DONE
+    // TEST
     private void parseAdditiveExpression() {
         this.dump("additive_expression -> multiplicative_expression additive_expression2");
         this.parseMultiplicativeExpression();
         this.parseAdditiveExpression2();
     }
 
-    // DONE
+    // TEST
     private void parseAdditiveExpression2() {
         if (this.checkSkip(OP_ADD)) {
             this.dump("additive_expression2 -> '+' additive_expression");
@@ -350,14 +353,14 @@ public class Parser {
             this.dump("additive_expression2 -> e");
     }
 
-    // DONE
+    // TEST
     private void parseMultiplicativeExpression() {
         this.dump("multiplicative_expression -> prefix_expression multiplicative_expression2");
         this.parsePrefixExpression();
         this.parseMultiplicativeExpression2();
     }
 
-    // DONE
+    // TEST
     private void parseMultiplicativeExpression2() {
         if (this.checkSkip(OP_MUL)) {
             this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
@@ -405,10 +408,12 @@ public class Parser {
     // DONE
     private void parsePostfixExpression2() {
         if (this.checkSkip(OP_LBRACKET)) {
-            this.dump("postfix_expression2 -> '[' expression ']' postfix_expression2");
+            this.dump("postfix_expression2 -> '[' expression");
             this.parseExpression();
-            if (this.checkSkip(OP_RBRACKET))
-                this.parsePostfixExpression2();            
+            if (this.checkSkip(OP_RBRACKET)){
+                this.dump(" ']' postfix_expression2");
+                this.parsePostfixExpression2();
+            }
             else 
                 Report.error(this.getPosition(), "Wrong postfix_expression: Expected ']' (right bracket).");
         }  
@@ -433,9 +438,11 @@ public class Parser {
             this.parseAtomExpressionLBracket();
         }
         else if (this.checkSkip(OP_LPARENT)) {
-            this.dump("atom_expression -> '(' expressions ')'");
+            this.dump("atom_expression -> '(' expressions");
             this.parseExpressions();
-            if (!this.checkSkip(OP_RPARENT))
+            if (this.checkSkip(OP_RPARENT))
+                this.dump(" ')'");
+            else 
                 Report.error(this.getPosition(), "Wrong atom_expression: Expected ')' (right parantheses).");
         }
         else
@@ -445,9 +452,11 @@ public class Parser {
     // DONE
     private void parseAtomExpressionIdentifier() {
         if (this.checkSkip(OP_LPARENT)) {
-            this.dump("atom_expression_Identifier -> '(' expressions ')'");
+            this.dump("atom_expression_Identifier -> '(' expressions");
             this.parseExpressions();
-            if (!this.checkSkip(OP_RPARENT))
+            if (this.checkSkip(OP_RPARENT))
+                this.dump(" ')'");
+            else 
                 Report.error(this.getPosition(), "Wrong atom_expression_Identifier: Expected ')' (right parantheses).");
         }
         else 
@@ -457,9 +466,10 @@ public class Parser {
     // DONE
     private void parseAtomExpressionLBracket() {
         if (this.checkSkip(KW_IF)) {
-            this.dump("atom_expression_LBracket -> 'if' expression 'then' expression atom_expression_LBracket_IF");
+            this.dump("atom_expression_LBracket -> 'if' expression");
             this.parseExpression();
             if (this.checkSkip(KW_THEN)) {
+                this.dump("'then' expression atom_expression_LBracket_IF");
                 this.parseExpression();
                 this.parseAtomExpressionLBracketIF();
             }
@@ -467,28 +477,36 @@ public class Parser {
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected 'then'.");
         }
         else if (this.checkSkip(KW_WHILE)) {
-            this.dump("atom_expression_LBracket -> 'while' expression ':' expression '}'");
+            this.dump("atom_expression_LBracket -> 'while' expression");
             this.parseExpression();
             if (this.checkSkip(OP_COLON))  {
+                this.dump("':' expression");
                 this.parseExpression();
-                if (!this.checkSkip(OP_RBRACE))
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump("'}'");
+                else                 
                     Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
             }
             else 
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ':' (column).");
         }
         else if (this.checkSkip(KW_FOR)) {
-            this.dump("atom_expression_LBracket -> 'for' identifier '=' expression ',' expression ',' expression ':' expression '}'");
-            if (this.checkSkip(IDENTIFIER))
-                if (this.checkSkip(OP_ASSIGN)) {                    
+            if (this.checkSkip(IDENTIFIER)) {
+                if (this.checkSkip(OP_ASSIGN)) {
+                    this.dump("atom_expression_LBracket -> 'for' identifier '=' expression");
                     this.parseExpression();
                     if (this.checkSkip(OP_COMMA)) {
+                        this.dump("',' expression");
                         this.parseExpression();
                         if (this.checkSkip(OP_COMMA)) {
+                            this.dump("',' expression");
                             this.parseExpression();
                             if (this.checkSkip(OP_COLON)) {
+                                this.dump("':' expression");
                                 this.parseExpression();
-                                if (!this.checkSkip(OP_RBRACE))
+                                if (this.checkSkip(OP_RBRACE))
+                                    this.dump("'}'");
+                                else 
                                     Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
                             }
                             else 
@@ -500,17 +518,17 @@ public class Parser {
                     else 
                         Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ',' (comma).");
                 }
-                else
-                    Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '=' (assign).");
-            else 
-                Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected identifier.");
+            }
         }
         else {
-            this.dump("atom_expression_LBracket -> expression '=' expression '}'");
+            this.dump("atom_expression_LBracket -> expression");
             this.parseExpression();
             if (this.checkSkip(OP_ASSIGN)) {
+                this.dump("'=' expression");
                 this.parseExpression();
-                if (!this.checkSkip(OP_RBRACE))
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump("'}'");
+                else 
                     Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
             }
             else
@@ -523,9 +541,11 @@ public class Parser {
         if (this.checkSkip(OP_RBRACE)) 
             this.dump("'}'");
         else if (this.checkSkip(KW_ELSE)) {
-            this.dump("'else' expression '}'");
+            this.dump("'else' expression");
             this.parseExpression();
-            if (!this.checkSkip(OP_RBRACE)) 
+            if (this.checkSkip(OP_RBRACE)) 
+                this.dump("'}'");
+            else                     
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket_IF: Expected '}' (right curly bracket).");
         }
         else 
@@ -552,10 +572,11 @@ public class Parser {
     // DONE
     private void parseVarDef() {
         // var is alredy skiped
-        this.dump("variable_definition -> 'var' identifer ':' type");
         if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_COLON)) 
+            if (this.checkSkip(OP_COLON)) {
+                this.dump("variable_definition -> 'var' identifer ':' type");
                 this.parseType();
+            }
             else 
                 Report.error(this.getPosition(), "Wrong variable_definition: Expected ':' (colon).");
         else 

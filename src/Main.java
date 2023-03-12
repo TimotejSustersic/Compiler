@@ -44,9 +44,9 @@ public class Main {
                 System.out.println(symbol.toString());
             }
         }
-        //if (cli.execPhase == Phase.LEX) {
-        //    return;
-        //}
+        if (cli.execPhase == Phase.LEX) {
+            return;
+        }
         /**
          * Izvedi sintaksno analizo.
          */
