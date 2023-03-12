@@ -115,14 +115,14 @@ atom_expression_Identifier -> '(' expressions ')' | e .
 *atom_expression -> '{' while expression ':' expression '}' .
 *atom_expression -> '{' for identifier '=' expression ',' expression ',' expression ':' expression '}' .
 //
-atom_expression -> '{' atom_expression_Rbracket .
+atom_expression -> '{' atom_expression_LBracket .
 
-atom_expression_Rbracket -> if expression then expression atom_expression_Rbracket_IF
+atom_expression_LBracket -> if expression then expression atom_expression_LBracket_IF
 | expression '=' expression '}'
 | while expression ':' expression '}'
 | for identifier '=' expression ',' expression ',' expression ':' expression '}' .
 
-atom_expression_Rbracket_IF -> '}' | else  expression '}' .
+atom_expression_LBracket_IF -> '}' | else  expression '}' .
 //**//
 atom_expression -> '(' expressions ')' .
 //************************************************//

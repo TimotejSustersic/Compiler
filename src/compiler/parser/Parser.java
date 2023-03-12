@@ -386,11 +386,11 @@ public class Parser {
             this.dump("prefix_expression -> '+' prefix_expression");
             this.parsePrefixExpression();
         }
-        if (this.checkSkip(OP_SUB)){
+        else if (this.checkSkip(OP_SUB)){
             this.dump("prefix_expression -> '-' prefix_expression");
             this.parsePrefixExpression();
         }
-        if (this.checkSkip(OP_NOT)){
+        else if (this.checkSkip(OP_NOT)){
             this.dump("prefix_expression -> '!' prefix_expression");
             this.parsePrefixExpression();
         }
@@ -423,9 +423,121 @@ public class Parser {
             this.dump("postfix_expression2 -> e");
     }
 
-    // TODO
+    // DONE
     private void parseAtomExpression() {
+        if (this.checkSkip(C_LOGICAL))
+            this.dump("atom_expression -> log_constant");
+        else if (this.checkSkip(C_INTEGER))
+            this.dump("atom_expression -> int_constant");
+        else if (this.checkSkip(C_STRING))
+            this.dump("atom_expression -> str_constant");        
+        else if (this.checkSkip(IDENTIFIER)) {
+            this.dump("atom_expression -> identifier atom_expression_Identifier");
+            this.parseAtomExpressionIdentifier();
+        }
+        else if (this.checkSkip(OP_LBRACE)) {
+            this.dump("atom_expression -> '{' atom_expression_LBracket");
+            this.parseAtomExpressionLBracket();
+        }
+        else if (this.checkSkip(OP_LPARENT)) {
+            this.dump("atom_expression -> '(' expressions");
+            this.parseExpression();
+            if (this.checkSkip(OP_RPARENT))
+                this.dump(" ')'");
+            else 
+                Report.error(this.getPosition(), "Wrong atom_expression: Expected ')' (right parantheses).");
+        }
+        else
+            Report.error(this.getPosition(), "Wrong atom_expression.");
+    }
 
+    // DONE
+    private void parseAtomExpressionIdentifier() {
+        if (this.checkSkip(OP_LPARENT)) {
+            this.dump("atom_expression_Identifier -> '(' expressions");
+            this.parseExpression();
+            if (this.checkSkip(OP_RPARENT))
+                this.dump(" ')'");
+            else 
+                Report.error(this.getPosition(), "Wrong atom_expression_Identifier: Expected ')' (right parantheses).");
+        }
+        else 
+            this.dump("atom_expression_Identifier -> e");
+    }
+
+    private void parseAtomExpressionLBracket() {
+        if (this.checkSkip(KW_IF)) {
+            this.dump("atom_expression_LBracket -> if expression");
+            this.parseExpression();
+            if (this.checkSkip(KW_THEN)) {
+                this.dump("then expression atom_expression_LBracket_IF");
+                this.parseExpression();
+                this.parseAtomExpressionLBracketIF();
+            }
+            else
+                Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected 'then'.");
+        }
+        else if (this.checkSkip(KW_WHILE)) {
+            this.dump("atom_expression_LBracket -> while expression");
+            this.parseExpression();
+            if (this.checkSkip(OP_COLON))  {
+                this.dump("':' expression");
+                this.parseExpression();
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump("'}'");
+                else                 
+                    Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
+            }
+            else 
+                Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ':' (column).");
+        }
+        else if (this.checkSkip(KW_FOR)) {
+            if (this.checkSkip(IDENTIFIER)) {
+                if (this.checkSkip(OP_ASSIGN)) {
+                    this.dump("atom_expression_LBracket -> for identifier '=' expression");
+                    this.parseExpression();
+                    if (this.checkSkip(OP_COMMA)) {
+                        this.dump("',' expression");
+                        this.parseExpression();
+                        if (this.checkSkip(OP_COMMA)) {
+                            this.dump("',' expression");
+                            this.parseExpression();
+                            if (this.checkSkip(OP_COLON)) {
+                                this.dump("':' expression");
+                                this.parseExpression();
+                                if (this.checkSkip(OP_RBRACE))
+                                    this.dump("'}'");
+                                else 
+                                    Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
+                            }
+                            else 
+                                Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ':' (colon).");
+                        }
+                        else 
+                            Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ',' (comma).");    
+                    }
+                    else 
+                        Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ',' (comma).");
+                }
+            }
+        }
+        else {
+            this.dump("atom_expression_LBracket -> expression");
+            this.parseExpression();
+            if (this.checkSkip(OP_ASSIGN)) {
+                this.dump("'=' expression");
+                this.parseExpression();
+                if (this.checkSkip(OP_RBRACE))
+                    this.dump("'}'");
+                else 
+                    Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
+            }
+            else
+                Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '=' (assign).");
+        }
+    }
+
+    private void parseAtomExpressionLBracketIF() {
     }
 
     // DONE
