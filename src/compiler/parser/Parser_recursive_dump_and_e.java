@@ -17,7 +17,7 @@ import compiler.lexer.Position;
 import compiler.lexer.Symbol;
 import compiler.lexer.TokenType;
 
-public class Parser {
+public class Parser_recursive_dump_and_e {
     /**
      * Seznam leksikalnih simbolov.
      */
@@ -31,7 +31,7 @@ public class Parser {
      */
     private final Optional<PrintStream> productionsOutputStream;
 
-    public Parser(List<Symbol> symbols, Optional<PrintStream> productionsOutputStream) {
+    public Parser_recursive_dump_and_e(List<Symbol> symbols, Optional<PrintStream> productionsOutputStream) {
         requireNonNull(symbols, productionsOutputStream);
         this.symbols = symbols;       
         this.productionsOutputStream = productionsOutputStream;
@@ -42,6 +42,8 @@ public class Parser {
      */
     public void parse() {
         parseSource();
+        if (this.symbols.get(this.currIndex).tokenType != EOF)
+        Report.error(this.getPosition(), "Wrong definition (ending). Expected $ (EOP)");
     }
 
     private void parseSource() {

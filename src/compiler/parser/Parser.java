@@ -42,6 +42,8 @@ public class Parser {
      */
     public void parse() {
         parseSource();
+        if (this.symbols.get(this.currIndex).tokenType != EOF)
+            Report.error(this.getPosition(), "Wrong definition (ending). Expected $ (EOP)");
     }
 
     private void parseSource() {
