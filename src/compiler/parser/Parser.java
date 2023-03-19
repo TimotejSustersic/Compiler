@@ -20,7 +20,12 @@ import compiler.lexer.TokenType;
 import compiler.lexer.Position.Location;
 import compiler.parser.ast.Ast;
 import compiler.parser.ast.def.Defs;
-import compiler.parser.ast.def.FunDef.*;
+import compiler.parser.ast.def.FunDef;
+import compiler.parser.ast.def.FunDef.Parameter;
+import compiler.parser.ast.expr.Binary;
+import compiler.parser.ast.expr.Binary.Operator;
+import compiler.parser.ast.expr.Expr;
+import compiler.parser.ast.expr.Where;
 import compiler.parser.ast.def.TypeDef;
 import compiler.parser.ast.def.VarDef;
 import compiler.parser.ast.type.TypeName;
@@ -167,6 +172,7 @@ public class Parser {
         }
         else 
             Report.error(this.getPosition(), "Wrong definition.");
+        return null;
     }
     
     // DONE
@@ -290,98 +296,117 @@ public class Parser {
         return null;
     }  
     
-    // TODO
-    private void parseExpression() {
+    // TEST, mogoce je treba locit deklaracijo defs pa defs classa
+    private Expr parseExpression() {
         this.dump("expression -> logical_ior_expression expression2");
-        this.parseLogicalIorExpression();
-        this.parseExpression2();
-    }       
+        var startLoc = this.getPosition().start;
+        var expr = this.parseLogicalIorExpression();
+        var defs = new Defs(this.getFinalPosition(startLoc), this.parseExpression2());
 
-    // TODO
-    private void parseExpression2() {
+        return new Where(this.getFinalPosition(startLoc), expr, defs);
+    }
+    // DONE
+    private List<Def> parseExpression2() {
         if (this.checkSkip(OP_LBRACE)) {
             this.dump("expression2 -> '{' 'WHERE' definitions '}'");
             if (this.checkSkip(KW_WHERE)) {                
-                this.parseDefinitions();
+                var defs = this.parseDefinitions();
                 if (!this.checkSkip(OP_RBRACE))
                     Report.error(this.getPosition(), "Wrong expression2: Expected '}' (right curly bracket)");
+                return defs;
             }
             else
                 Report.error(this.getPosition(), "Wrong expression2: Expected WHERE");
         }
         else
             this.dump("expression2 -> e");
+        return new ArrayList<Def>();
     }    
 
-    // TODO
-    private void parseLogicalIorExpression() {
+    // TODO mogoce bo treba left pa right zamenjat
+    // DONE
+    private Binary parseLogicalIorExpression() {
         this.dump("logical_ior_expression -> logical_and_expression logical_ior_expression2");
-        this.parseLogicalAndExpression();
-        this.parseLogicalIorExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parseLogicalAndExpression();
+        return this.parseLogicalIorExpression2(left, startLoc);
     }
 
-    // TODO
-    private void parseLogicalIorExpression2() {
+    // TEST return null probably isnt ok
+    private Binary parseLogicalIorExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_OR)) {
-            this.dump("logical_ior_expression2 -> '|' logical_ior_expression");
-            this.parseLogicalIorExpression();
+            this.dump("logical_ior_expression2 -> '|' logical_ior_expression");            
+            var right = this.parseLogicalIorExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.OR, right);
         }
         else                     
             this.dump("logical_ior_expression2 -> e");
+        return null;
     }
 
-    // TODO
-    private void parseLogicalAndExpression() {
+    // DONE
+    private Binary parseLogicalAndExpression() {
         this.dump("logical_and_expression -> compare_expression logical_and_expression2");
-        this.parseCompareExpression();
-        this.parseLogicalAndExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parseCompareExpression();
+        return this.parseLogicalAndExpression2(left, startLoc);
     }
 
-    // TODO
-    private void parseLogicalAndExpression2() {
+    // TEST
+    private Binary parseLogicalAndExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_AND)) {
             this.dump("logical_and_expression2 -> '&' logical_and_expression");
-            this.parseLogicalAndExpression();
+            var right = this.parseLogicalAndExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.AND, right);
         }
         else                     
             this.dump("logical_and_expression2 -> e");
+        return null;
     }
 
-    // TODO
-    private void parseCompareExpression() {
+    // DONE
+    private Binary parseCompareExpression() {
         this.dump("compare_expression -> additive_expression compare_expression2");
-        this.parseAdditiveExpression();
-        this.parseCompareExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parseAdditiveExpression();
+        return this.parseCompareExpression2(left, startLoc);
     }
     
-    // TODO
-    private void parseCompareExpression2() {
+    // TEST za return null
+    private Binary parseCompareExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_EQ)) {
             this.dump("compare_expression2 -> '==' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.EQ, right);
         }        
         else if (this.checkSkip(OP_NEQ)) {
             this.dump("compare_expression2 -> '!=' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.NEQ, right);
         }      
         else if (this.checkSkip(OP_LEQ)) {
             this.dump("compare_expression2 -> '<=' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.LEQ, right);
         }      
         else if (this.checkSkip(OP_GEQ)) {
             this.dump("compare_expression2 -> '>=' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.GEQ, right);
         }      
         else if (this.checkSkip(OP_LT)) {
             this.dump("compare_expression2 -> '<' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.LT, right);
         }      
         else if (this.checkSkip(OP_GT)) {
             this.dump("compare_expression2 -> '>' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.GT, right);
         }
         else                     
             this.dump("compare_expression2 -> e");
+        return null;
     }
 
     // TODO
