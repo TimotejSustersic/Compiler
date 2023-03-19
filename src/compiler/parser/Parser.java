@@ -16,6 +16,7 @@ import common.Report;
 import compiler.lexer.Position;
 import compiler.lexer.Symbol;
 import compiler.lexer.TokenType;
+import compiler.parser.ast.Ast;
 
 public class Parser {
     /**
@@ -40,23 +41,20 @@ public class Parser {
     /**
      * Izvedi sintaksno analizo.
      */
-    public void parse() {
-        parseSource();
-        if (this.symbols.get(this.currIndex).tokenType != EOF)
-            Report.error(this.getPosition(), "Wrong definition (ending). Expected $ (EOP)");
+    public Ast parse() {
+        var ast = parseSource();
+        return ast;
     }
 
-    private void parseSource() {
+    private Ast parseSource() {
 
         this.dump("source -> definitions");
         this.parseDefinitions();
 
-        // nisem vedu a bi blo bol delat error je tko da ti pove kaj manjka/prcakuje ali celotno strukture k jo prckuje
-        // in sem se odlocu da pove samo za naslednji pricakovani leksem
-        
-        // ?TODO?: dej zakomenteri dele k vracajo 'e' k se mi zdi da ga nesmes, ampak na vajah smo ga dal tko da pust nagmah
+        if (this.symbols.get(this.currIndex).tokenType != EOF)
+            Report.error(this.getPosition(), "Wrong definition (ending). Expected $ (EOP)"); 
 
-        // TODO: Testeri
+        throw new RuntimeException("Not implemented");
     }
 
     /**
