@@ -1,7 +1,0 @@
-integer x = 2+3;
-
-if (x!=3 && x >= 5) {
-    integer b = 1;
-}
-
-EOF
