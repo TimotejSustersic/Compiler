@@ -1,39 +1,16 @@
-typ prvic:string;
-typ drugic : integer;
-typ tretjic : besedilo;
-typ cetrtic: arr[7] arr[7] logical;
-var petic : arr [ 10 ] integer;
+var x: integer;
+typ MyInt: integer;
+fun f ( x : logical ) : arr [ 10 ] integer = 0
 
-fun prvaFunkcija (prvic:string, drugic:integer, cetrtic:arr[7] logical) : integer =
-5 + 3 - 2 == 10 & true | beseda / drugabeseda * 'danesjelepdanaaaaa' % cetrtic != petic + 5 - !e
-- (-10) + (+(+(-10))) / (!cetrtic) + 100 - false | nekaj & nekaj == bla | nekaj >= blabla &
-nekaj <= blablabla | nekaj + nekaj < bla & nekaj - nekaj > nekajbla { where
-    fun drugaFunkcija(nekaj:integer):integer=
-        {
-            { if haha then {
-                    if nekaj then 5+3-1-4+2 * true else {
-                        while nekaj >= nekaj * (-5323223) + -44545    : {
-                            for nekaj = 1, nekaj >= -9999999, nekajnekaj-1-1-1-1:nekaj
-                        }
-                    }
-                }
-             }
-        = celotenprogramtideluje69 { where
-            fun epicBubblesort(polje:arr[10]integer):void =
-                n == dolzinaPolja &
-                temp == 0 & {
-                for i=0,i<n,i + 1:
-                    { for j=0, j<(n-i),j + 1:
-                        {
-                            if polje[j-1] > polje[j] then
-                                temp == polje[j-1] &
-                                polje[j-1] == polje[j] &
-                                polje[j] == temp &
-                                blablabla #neki komentarji
-                        }
-                    }
-                }
-            }
-         }
-    }
-#lololololol
+#Defs [1:1-3:47]
+#  VarDef [1:1-1:15]: x
+#    Atom [1:8-1:15]: INT
+#  TypeDef [2:1-2:19]: MyInt
+#    Atom [2:12-2:19]: INT
+#  FunDef [3:1-3:47]: f
+#    Parameter [3:9-3:20]: x
+#      Atom [3:13-3:20]: LOG
+#    Array [3:25-3:43]
+#      [10]
+#      Atom [3:36-3:43]: INT
+#    Literal [3:46-3:47]: INT(0)
