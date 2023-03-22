@@ -24,6 +24,7 @@ import compiler.parser.ast.def.FunDef;
 import compiler.parser.ast.def.FunDef.Parameter;
 import compiler.parser.ast.expr.Binary;
 import compiler.parser.ast.expr.Block;
+import compiler.parser.ast.expr.Call;
 import compiler.parser.ast.expr.Binary.Operator;
 import compiler.parser.ast.expr.Expr;
 import compiler.parser.ast.expr.For;
@@ -37,6 +38,7 @@ import compiler.parser.ast.def.TypeDef;
 import compiler.parser.ast.def.VarDef;
 import compiler.parser.ast.type.TypeName;
 import compiler.parser.ast.type.Type;
+import compiler.parser.ast.type.Array;
 import compiler.parser.ast.type.Atom;
 import compiler.parser.ast.def.Def;
 
@@ -93,6 +95,13 @@ public class Parser {
      */
     private void skip() {
         this.currIndex++;
+    }
+
+    /**
+     * Pridobi ime
+     */
+    private String getLexeme() {
+        return this.symbols.get(this.currIndex).lexeme;
     }
 
     /**
@@ -166,17 +175,18 @@ public class Parser {
 
     // DONE
     private Def parseDefinition() {
+        var startLoc = this.getPosition().start;
         if(this.checkSkip(KW_TYP)) {
             this.dump("definition -> type_definition");
-            return this.parseTypeDef();
+            return this.parseTypeDef(startLoc);
         }
         else if (this.checkSkip(KW_FUN)) {
             this.dump("definition -> function_definition");
-            return this.parseFunDef();
+            return this.parseFunDef(startLoc);
         }
         else if (this.checkSkip(KW_VAR)) {
             this.dump("definition -> variable_definition");
-            return this.parseVarDef();
+            return this.parseVarDef(startLoc);
         }
         else 
             Report.error(this.getPosition(), "Wrong definition.");
@@ -184,37 +194,40 @@ public class Parser {
     }
     
     // DONE
-    private TypeDef parseTypeDef() {        
+    private TypeDef parseTypeDef(Location start) {        
         // typ is alredy skiped
-        if (this.checkSkip(IDENTIFIER))
+        if (this.check(IDENTIFIER)) {
+            var name = this.getLexeme();
+            this.skip();
             if (this.checkSkip(OP_COLON)) {
                 this.dump("type_definition -> 'typ' identifier ':' type");
-                var startLoc = this.getPosition().start;
                 var type = this.parseType();
-                return new TypeDef(this.getFinalPosition(startLoc), "TypeDef", type);
+                return new TypeDef(this.getFinalPosition(start), name, type);
             }
             else 
                 Report.error(this.getPosition(), "Wrong type_definition: Expected ':' (colon).");
+        }
         else 
             Report.error(this.getPosition(), "Wrong type_definition: Expected identifier.");
         return null;
     }
 
     // DONE
-    private FunDef parseFunDef() {
+    private FunDef parseFunDef(Location start) {
         // fun is alredy skiped
         this.dump("function_definition -> 'fun' identifier '(' parameters ')' ':' type '=' expression"); 
 
-        if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_LPARENT)) {     
-                var startLoc = this.getPosition().start;
+        if (this.check(IDENTIFIER)) {
+            var name = this.getLexeme();
+            this.skip();
+            if (this.checkSkip(OP_LPARENT)) {
                 var params = this.parseParameters();
                 if (this.checkSkip(OP_RPARENT))
                     if (this.checkSkip(OP_COLON)) {
                         var type = this.parseType();
                         if (this.checkSkip(OP_ASSIGN)) {
                             var expr = this.parseExpression(); 
-                            return new FunDef(this.getFinalPosition(startLoc), "FunDef", params, type, expr);     
+                            return new FunDef(this.getFinalPosition(start), name, params, type, expr);     
                         }                
                         else 
                             Report.error(this.getPosition(), "Wrong function_definition: Expected '=' (equals).");
@@ -226,37 +239,46 @@ public class Parser {
             }
             else 
                 Report.error(this.getPosition(), "Wrong function_definition: Expected '(' (left parantheses).");
+        }
         else 
             Report.error(this.getPosition(), "Wrong function_definition: Expected identifier.");
         return null;
     }    
     
-    // TEST
+    // DONE
     private Type parseType() {
-        if (this.checkSkip(IDENTIFIER)) {
+        var startLoc = this.getPosition().start;
+        if (this.check(IDENTIFIER)) {
+            var name = this.getLexeme();
+            this.skip();
             this.dump("type -> identifier");
-            return new TypeName(this.getPreviousPosition(), "IDENTIFIER");
+            return new TypeName(this.getPreviousPosition(), name);
         }
         else if (this.checkSkip(AT_LOGICAL)) {
             this.dump("type -> 'logical'");
-            return new TypeName(this.getPreviousPosition(), "LOGICAL");
+            return Atom.LOG(this.getPreviousPosition());
         }
         else if (this.checkSkip(AT_INTEGER)) {
             this.dump("type -> 'integer'");
-            return new TypeName(this.getPreviousPosition(), "INTEGER");
+            return Atom.INT(this.getPreviousPosition());
         }
         else if (this.checkSkip(AT_STRING)) {
             this.dump("type -> 'string'");
-            return new TypeName(this.getPreviousPosition(), "STRING");
+            return Atom.STR(this.getPreviousPosition());
         }
-        else if (this.checkSkip(KW_ARR)) {
+        else if (this.checkSkip(KW_ARR)) {            
             this.dump("type -> 'arr' '[' int_const ']' type");
             if (this.checkSkip(OP_LBRACKET))
-                if (this.checkSkip(C_INTEGER))
-                    if (this.checkSkip(OP_RBRACKET))                     
-                        return this.parseType();
+                if (this.check(C_INTEGER)){
+                    var number = Integer.parseInt(this.getLexeme());
+                    this.skip();
+                    if (this.checkSkip(OP_RBRACKET)) {
+                        var type = this.parseType();
+                        return new Array(getFinalPosition(startLoc), number, type);
+                    }
                     else
-                        Report.error(this.getPosition(), "Wrong type: Expected ']' (right bracket)");                 
+                        Report.error(this.getPosition(), "Wrong type: Expected ']' (right bracket)");   
+                }              
                 else
                     Report.error(this.getPosition(), "Wrong type: Expected int_constant");                
             else
@@ -291,57 +313,60 @@ public class Parser {
     // DONE
     private Parameter parseParameter() {
         this.dump("identifier ':' type");
-        if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_COLON)) {
-                var startLoc = this.getPosition().start;
+        var startLoc = this.getPosition().start;
+        if (this.check(IDENTIFIER)) {
+            var name = this.getLexeme();
+            this.skip();
+            if (this.checkSkip(OP_COLON)) {                
                 var type = this.parseType();
-                return new Parameter(this.getFinalPosition(startLoc), "Parameter", type);
+                return new Parameter(this.getFinalPosition(startLoc), name, type);
             }
             else
                 Report.error(this.getPosition(), "Wrong parameter: Expected ':' (colon)");
+        }
         else
             Report.error(this.getPosition(), "Wrong parameter: Expected identifier");
         return null;
     }  
     
-    // TEST, mogoce je treba locit deklaracijo defs pa defs classa
+    // DONE
     private Expr parseExpression() {
         this.dump("expression -> logical_ior_expression expression2");
         var startLoc = this.getPosition().start;
         var expr = this.parseLogicalIorExpression();
-        var defs = new Defs(this.getFinalPosition(startLoc), this.parseExpression2());
 
-        return new Where(this.getFinalPosition(startLoc), expr, defs);
+        return this.parseExpression2(startLoc, expr);
     }
     // DONE
-    private List<Def> parseExpression2() {
+    private Expr parseExpression2(Location start, Expr expr) {
         if (this.checkSkip(OP_LBRACE)) {
             this.dump("expression2 -> '{' 'WHERE' definitions '}'");
             if (this.checkSkip(KW_WHERE)) {                
                 var defs = this.parseDefinitions();
-                if (!this.checkSkip(OP_RBRACE))
-                    Report.error(this.getPosition(), "Wrong expression2: Expected '}' (right curly bracket)");
-                return defs;
+                if (this.checkSkip(OP_RBRACE)) {
+                    return new Where(this.getFinalPosition(start), expr, new Defs(this.getFinalPosition(this.getPosition().start), defs));
+                }
+                else 
+                    Report.error(this.getPosition(), "Wrong expression2: Expected '}' (right curly bracket)");                             
             }
             else
                 Report.error(this.getPosition(), "Wrong expression2: Expected WHERE");
         }
         else
             this.dump("expression2 -> e");
-        return new ArrayList<Def>();
+        return expr;
     }    
 
-    // TODO mogoce bo treba left pa right zamenjat
     // DONE
-    private Binary parseLogicalIorExpression() {
+    private Expr parseLogicalIorExpression() {
         this.dump("logical_ior_expression -> logical_and_expression logical_ior_expression2");
         var startLoc = this.getPosition().start;
         var left = this.parseLogicalAndExpression();
         return this.parseLogicalIorExpression2(left, startLoc);
     }
 
-    // TEST return null probably isnt ok
-    private Binary parseLogicalIorExpression2(Expr left, Location start) {
+    // DONE
+    private Expr parseLogicalIorExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_OR)) {
             this.dump("logical_ior_expression2 -> '|' logical_ior_expression");            
             var right = this.parseLogicalIorExpression();
@@ -349,19 +374,19 @@ public class Parser {
         }
         else                     
             this.dump("logical_ior_expression2 -> e");
-        return null;
+        return left;
     }
 
     // DONE
-    private Binary parseLogicalAndExpression() {
+    private Expr parseLogicalAndExpression() {
         this.dump("logical_and_expression -> compare_expression logical_and_expression2");
         var startLoc = this.getPosition().start;
         var left = this.parseCompareExpression();
         return this.parseLogicalAndExpression2(left, startLoc);
     }
 
-    // TEST
-    private Binary parseLogicalAndExpression2(Expr left, Location start) {
+    // DONE
+    private Expr parseLogicalAndExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_AND)) {
             this.dump("logical_and_expression2 -> '&' logical_and_expression");
             var right = this.parseLogicalAndExpression();
@@ -369,19 +394,19 @@ public class Parser {
         }
         else                     
             this.dump("logical_and_expression2 -> e");
-        return null;
+        return left;
     }
 
     // DONE
-    private Binary parseCompareExpression() {
+    private Expr parseCompareExpression() {
         this.dump("compare_expression -> additive_expression compare_expression2");
         var startLoc = this.getPosition().start;
         var left = this.parseAdditiveExpression();
         return this.parseCompareExpression2(left, startLoc);
     }
     
-    // TEST za return null
-    private Binary parseCompareExpression2(Expr left, Location start) {
+    // DONE
+    private Expr parseCompareExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_EQ)) {
             this.dump("compare_expression2 -> '==' additive_expression");
             var right = this.parseAdditiveExpression();
@@ -414,11 +439,11 @@ public class Parser {
         }
         else                     
             this.dump("compare_expression2 -> e");
-        return null;
+        return left;
     }
 
     // DONE
-    private Binary parseAdditiveExpression() {
+    private Expr parseAdditiveExpression() {
         this.dump("additive_expression -> multiplicative_expression additive_expression2");
         var startLoc = this.getPosition().start;
         var left = this.parseMultiplicativeExpression();
@@ -426,7 +451,7 @@ public class Parser {
     }
 
     // TEST for null
-    private Binary parseAdditiveExpression2(Expr left, Location start) {
+    private Expr parseAdditiveExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_ADD)) {
             this.dump("additive_expression2 -> '+' additive_expression");
             var right = this.parseAdditiveExpression();
@@ -439,11 +464,11 @@ public class Parser {
         }
         else
             this.dump("additive_expression2 -> e");
-        return null;
+        return left;
     }
 
     // DONE
-    private Binary parseMultiplicativeExpression() {
+    private Expr parseMultiplicativeExpression() {
         this.dump("multiplicative_expression -> prefix_expression multiplicative_expression2");
         var startLoc = this.getPosition().start;
         var left = this.parsePrefixExpression(startLoc);
@@ -451,7 +476,7 @@ public class Parser {
     }
 
     // TEST for null
-    private Binary parseMultiplicativeExpression2(Expr left, Location start) {
+    private Expr parseMultiplicativeExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_MUL)) {
             this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
             var right = this.parseMultiplicativeExpression();
@@ -469,7 +494,7 @@ public class Parser {
         }
         else
             this.dump("multiplicative_expression2 -> e");
-        return null;
+        return left;
     }
 
     // DONE
@@ -515,26 +540,34 @@ public class Parser {
         }  
         else
             this.dump("postfix_expression2 -> e");
-            return atomExpr;
+        return atomExpr;
     }
 
-    // TODO
+    // DONE
     private Expr parseAtomExpression(Location start) {
-        if (this.checkSkip(C_LOGICAL)) {
+        if (this.check(C_LOGICAL)) {
+            var lex = this.getLexeme();
+            skip();
             this.dump("atom_expression -> log_constant");
-            return new Literal(getFinalPosition(start), null, Atom.Type.LOG);
+            return new Literal(getFinalPosition(start), lex, Atom.Type.LOG);
         }
-        else if (this.checkSkip(C_INTEGER)){
+        else if (this.check(C_INTEGER)){
+            var lex = this.getLexeme();
+            skip();
             this.dump("atom_expression -> int_constant");
-            return new Literal(getFinalPosition(start), null, Atom.Type.INT);
+            return new Literal(getFinalPosition(start), lex, Atom.Type.INT);
         }
-        else if (this.checkSkip(C_STRING)) {
+        else if (this.check(C_STRING)) {
+            var lex = this.getLexeme();
+            skip();
             this.dump("atom_expression -> str_constant");  
-            return new Literal(getFinalPosition(start), null, Atom.Type.STR);
+            return new Literal(getFinalPosition(start), lex, Atom.Type.STR);
         }      
-        else if (this.checkSkip(IDENTIFIER)) {
+        else if (this.check(IDENTIFIER)) {
             this.dump("atom_expression -> identifier atom_expression_Identifier");
-            return this.parseAtomExpressionIdentifier(start);
+            var name = this.getLexeme();
+            this.skip();
+            return this.parseAtomExpressionIdentifier(start, name);
         }
         else if (this.checkSkip(OP_LBRACE)) {
             this.dump("atom_expression -> '{' atom_expression_LBracket");
@@ -553,17 +586,17 @@ public class Parser {
     }
 
     // DONE
-    private Expr parseAtomExpressionIdentifier(Location start) {
+    private Expr parseAtomExpressionIdentifier(Location start, String name) {
         if (this.checkSkip(OP_LPARENT)) {
             this.dump("atom_expression_Identifier -> '(' expressions ')'");
             var exprs = this.parseExpressions();
             if (!this.checkSkip(OP_RPARENT))
                 Report.error(this.getPosition(), "Wrong atom_expression_Identifier: Expected ')' (right parantheses).");
-            return new Block(getFinalPosition(start), exprs);
+            return new Call(getFinalPosition(start), exprs, name);
         }
         else 
             this.dump("atom_expression_Identifier -> e");
-        return null;
+        return new Name(getFinalPosition(start), name);
     }
 
     // DONE
@@ -593,7 +626,7 @@ public class Parser {
         else if (this.checkSkip(KW_FOR)) {
             this.dump("atom_expression_LBracket -> 'for' identifier '=' expression ',' expression ',' expression ':' expression '}'");
             if (this.check(IDENTIFIER)) {
-                var name = new Name(getFinalPosition(start), this.symbols.get(currIndex).lexeme);
+                var name = new Name(getFinalPosition(start), this.getLexeme());
                 this.skip();
                 if (this.checkSkip(OP_ASSIGN)) {                    
                     var expr1 = this.parseExpression();
@@ -673,22 +706,24 @@ public class Parser {
         }
         else 
             this.dump("expressions2 -> e ");
-        return null;
+        return new ArrayList<Expr>();
     }
 
     // DONE
-    private VarDef parseVarDef() {
-        // var is alredy skiped
+    private VarDef parseVarDef(Location start) {
+        // var is alredy skiped        
         this.dump("variable_definition -> 'var' identifer ':' type");
-        if (this.checkSkip(IDENTIFIER))
-            if (this.checkSkip(OP_COLON)) {
-                var startLoc = this.getPosition().start;
+        if (this.check(IDENTIFIER)) {
+            var name = this.getLexeme();
+            this.skip();
+            if (this.checkSkip(OP_COLON)) {                
                 var type = this.parseType();
                 var endLoc = this.getPreviousPosition().end;
-                return new VarDef(new Position(startLoc, endLoc), "VarDef", type);
+                return new VarDef(new Position(start, endLoc), name, type);
             }
             else 
                 Report.error(this.getPosition(), "Wrong variable_definition: Expected ':' (colon).");
+        }
         else 
             Report.error(this.getPosition(), "Wrong variable_definition: Expected identifier.");
         return null;
