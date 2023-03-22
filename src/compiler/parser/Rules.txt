@@ -101,7 +101,7 @@ postfix_expression2 -> '[' expression ']' postfix_expression2 | e .
 //************************************************//
 atom_expression -> log_constant .
 atom_expression -> int_constant .
-atom_expression -> str_constant .
+atom_expression -> str_constant . 
 //**//
 *atom_expression -> identifier .
 *atom_expression -> identifier '(' expressions ')' .
@@ -122,7 +122,7 @@ atom_expression_LBracket -> 'if' expression 'then' expression atom_expression_LB
 | while expression ':' expression '}'
 | for identifier '=' expression ',' expression ',' expression ':' expression '}' .
 
-atom_expression_LBracket_IF -> '}' | else expression '}' .
+atom_expression_LBracket_IF -> '}' | else expression '}' . 
 //**//
 atom_expression -> '(' expressions ')' .
 //************************************************//

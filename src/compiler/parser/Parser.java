@@ -406,40 +406,40 @@ public class Parser {
     }
     
     // DONE
-    private Expr parseCompareExpression2(Expr left, Location start) {
+    private Expr parseCompareExpression2(Expr right, Location start) {
         if (this.checkSkip(OP_EQ)) {
             this.dump("compare_expression2 -> '==' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.EQ, right);
         }        
         else if (this.checkSkip(OP_NEQ)) {
             this.dump("compare_expression2 -> '!=' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.NEQ, right);
         }      
         else if (this.checkSkip(OP_LEQ)) {
             this.dump("compare_expression2 -> '<=' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.LEQ, right);
         }      
         else if (this.checkSkip(OP_GEQ)) {
             this.dump("compare_expression2 -> '>=' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.GEQ, right);
         }      
         else if (this.checkSkip(OP_LT)) {
             this.dump("compare_expression2 -> '<' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.LT, right);
         }      
         else if (this.checkSkip(OP_GT)) {
             this.dump("compare_expression2 -> '>' additive_expression");
-            var right = this.parseAdditiveExpression();
+            var left = this.parseAdditiveExpression();
             return new Binary(this.getFinalPosition(start), left, Operator.GT, right);
         }
         else                     
             this.dump("compare_expression2 -> e");
-        return left;
+        return right;
     }
 
     // DONE
@@ -450,7 +450,7 @@ public class Parser {
         return this.parseAdditiveExpression2(left, startLoc);
     }
 
-    // TEST for null
+    // DONE
     private Expr parseAdditiveExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_ADD)) {
             this.dump("additive_expression2 -> '+' additive_expression");
@@ -475,7 +475,7 @@ public class Parser {
         return this.parseMultiplicativeExpression2(left, startLoc);
     }
 
-    // TEST for null
+    // DONE
     private Expr parseMultiplicativeExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_MUL)) {
             this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
@@ -501,18 +501,18 @@ public class Parser {
     private Expr parsePrefixExpression(Location start) {
         if (this.checkSkip(OP_ADD)){
             this.dump("prefix_expression -> '+' prefix_expression");
-            var left = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), left, Unary.Operator.ADD);
+            var expr = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.ADD);
         }
         else if (this.checkSkip(OP_SUB)){
             this.dump("prefix_expression -> '-' prefix_expression");
-            var left = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), left, Unary.Operator.SUB);
+            var expr = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.SUB);
         }
         else if (this.checkSkip(OP_NOT)){
             this.dump("prefix_expression -> '!' prefix_expression");
-            var left = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), left, Unary.Operator.NOT);
+            var expr = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.NOT);
         }
         else {
             this.dump("prefix_expression -> postfix_expression");
@@ -524,8 +524,8 @@ public class Parser {
     private Expr parsePostfixExpression() {
         this.dump("postfix_expression -> atom_expression postfix_expression2");
         var startLoc = this.getPosition().start;
-        var left = this.parseAtomExpression(startLoc);
-        return this.parsePostfixExpression2(left);
+        var atomExpr = this.parseAtomExpression(startLoc);
+        return this.parsePostfixExpression2(atomExpr);
     }
 
     // DONE
