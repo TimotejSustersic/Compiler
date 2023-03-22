@@ -25,11 +25,16 @@ import compiler.parser.ast.def.FunDef.Parameter;
 import compiler.parser.ast.expr.Binary;
 import compiler.parser.ast.expr.Binary.Operator;
 import compiler.parser.ast.expr.Expr;
+import compiler.parser.ast.expr.Literal;
+import compiler.parser.ast.expr.Unary;
 import compiler.parser.ast.expr.Where;
+import compiler.parser.ast.expr.While;
+import compiler.parser.ast.expr.IfThenElse;
 import compiler.parser.ast.def.TypeDef;
 import compiler.parser.ast.def.VarDef;
 import compiler.parser.ast.type.TypeName;
 import compiler.parser.ast.type.Type;
+import compiler.parser.ast.type.Atom;
 import compiler.parser.ast.def.Def;
 
 public class Parser {
@@ -409,112 +414,132 @@ public class Parser {
         return null;
     }
 
-    // TODO
-    private void parseAdditiveExpression() {
+    // DONE
+    private Binary parseAdditiveExpression() {
         this.dump("additive_expression -> multiplicative_expression additive_expression2");
-        this.parseMultiplicativeExpression();
-        this.parseAdditiveExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parseMultiplicativeExpression();
+        return this.parseAdditiveExpression2(left, startLoc);
     }
 
-    // TODO
-    private void parseAdditiveExpression2() {
+    // TEST for null
+    private Binary parseAdditiveExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_ADD)) {
             this.dump("additive_expression2 -> '+' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.ADD, right);
         }
         else if (this.checkSkip(OP_SUB)) {
             this.dump("additive_expression2 -> '-' additive_expression");
-            this.parseAdditiveExpression();
+            var right = this.parseAdditiveExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.SUB, right);
         }
         else
             this.dump("additive_expression2 -> e");
+        return null;
     }
 
-    // TODO
-    private void parseMultiplicativeExpression() {
+    // DONE
+    private Binary parseMultiplicativeExpression() {
         this.dump("multiplicative_expression -> prefix_expression multiplicative_expression2");
-        this.parsePrefixExpression();
-        this.parseMultiplicativeExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parsePrefixExpression(startLoc);
+        return this.parseMultiplicativeExpression2(left, startLoc);
     }
 
-    // TODO
-    private void parseMultiplicativeExpression2() {
+    // TEST for null
+    private Binary parseMultiplicativeExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_MUL)) {
             this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
-            this.parseMultiplicativeExpression();
+            var right = this.parseMultiplicativeExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.MUL, right);
         }
         else if (this.checkSkip(OP_DIV)) {
             this.dump("multiplicative_expression2 -> '/' multiplicative_expression");
-            this.parseMultiplicativeExpression();
+            var right = this.parseMultiplicativeExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.DIV, right);
         }
         else if (this.checkSkip(OP_MOD)) {
             this.dump("multiplicative_expression2 -> '%' multiplicative_expression");
-            this.parseMultiplicativeExpression();
+            var right = this.parseMultiplicativeExpression();
+            return new Binary(this.getFinalPosition(start), left, Operator.MOD, right);
         }
         else
             this.dump("multiplicative_expression2 -> e");
+        return null;
     }
 
-    // TODO
-    private void parsePrefixExpression() {
+    // DONE
+    private Expr parsePrefixExpression(Location start) {
         if (this.checkSkip(OP_ADD)){
             this.dump("prefix_expression -> '+' prefix_expression");
-            this.parsePrefixExpression();
+            var left = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), left, Unary.Operator.ADD);
         }
         else if (this.checkSkip(OP_SUB)){
             this.dump("prefix_expression -> '-' prefix_expression");
-            this.parsePrefixExpression();
+            var left = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), left, Unary.Operator.SUB);
         }
         else if (this.checkSkip(OP_NOT)){
             this.dump("prefix_expression -> '!' prefix_expression");
-            this.parsePrefixExpression();
+            var left = this.parsePrefixExpression(start);
+            return new Unary(this.getFinalPosition(start), left, Unary.Operator.NOT);
         }
         else {
             this.dump("prefix_expression -> postfix_expression");
-            this.parsePostfixExpression();
+            return this.parsePostfixExpression();
         }
     }
 
-    // TODO
-    private void parsePostfixExpression() {
+    // DONE
+    private Expr parsePostfixExpression() {
         this.dump("postfix_expression -> atom_expression postfix_expression2");
-        this.parseAtomExpression();
-        this.parsePostfixExpression2();
+        var startLoc = this.getPosition().start;
+        var left = this.parseAtomExpression(startLoc);
+        return this.parsePostfixExpression2(left);
     }
 
-    // TODO
-    private void parsePostfixExpression2() {
+    // DONE
+    private Ast parsePostfixExpression2(Ast atomExpr) {
         if (this.checkSkip(OP_LBRACKET)) {
             this.dump("postfix_expression2 -> '[' expression ']' postfix_expression2");
-            this.parseExpression();
+            var expr = this.parseExpression();
             if (this.checkSkip(OP_RBRACKET))
-                this.parsePostfixExpression2();            
+                return this.parsePostfixExpression2(expr);            
             else 
                 Report.error(this.getPosition(), "Wrong postfix_expression: Expected ']' (right bracket).");
         }  
         else
             this.dump("postfix_expression2 -> e");
+            return atomExpr;
     }
 
     // TODO
-    private void parseAtomExpression() {
-        if (this.checkSkip(C_LOGICAL))
+    private Ast parseAtomExpression(Location start) {
+        if (this.checkSkip(C_LOGICAL)) {
             this.dump("atom_expression -> log_constant");
-        else if (this.checkSkip(C_INTEGER))
+            return Atom.LOG(getFinalPosition(start));
+        }
+        else if (this.checkSkip(C_INTEGER)){
             this.dump("atom_expression -> int_constant");
-        else if (this.checkSkip(C_STRING))
-            this.dump("atom_expression -> str_constant");        
+            return Atom.INT(getFinalPosition(start));
+        }
+        else if (this.checkSkip(C_STRING)) {
+            this.dump("atom_expression -> str_constant");  
+            return Atom.STR(getFinalPosition(start));
+        }      
         else if (this.checkSkip(IDENTIFIER)) {
             this.dump("atom_expression -> identifier atom_expression_Identifier");
-            this.parseAtomExpressionIdentifier();
+            return this.parseAtomExpressionIdentifier(start);
         }
         else if (this.checkSkip(OP_LBRACE)) {
             this.dump("atom_expression -> '{' atom_expression_LBracket");
-            this.parseAtomExpressionLBracket();
+            return this.parseAtomExpressionLBracket(start);
         }
         else if (this.checkSkip(OP_LPARENT)) {
             this.dump("atom_expression -> '(' expressions ')'");
-            this.parseExpressions();
+            return this.parseExpressions(start);
             if (!this.checkSkip(OP_RPARENT))
                 Report.error(this.getPosition(), "Wrong atom_expression: Expected ')' (right parantheses).");
         }
@@ -522,37 +547,40 @@ public class Parser {
             Report.error(this.getPosition(), "Wrong atom_expression.");
     }
 
-    // TODO
-    private void parseAtomExpressionIdentifier() {
+    // DONE
+    private Expr parseAtomExpressionIdentifier(Location start) {
         if (this.checkSkip(OP_LPARENT)) {
             this.dump("atom_expression_Identifier -> '(' expressions ')'");
-            this.parseExpressions();
+            var expr = this.parseExpressions();
+            // verjetn se return naki vec
             if (!this.checkSkip(OP_RPARENT))
                 Report.error(this.getPosition(), "Wrong atom_expression_Identifier: Expected ')' (right parantheses).");
         }
         else 
             this.dump("atom_expression_Identifier -> e");
+        return null;
     }
 
     // TODO
-    private void parseAtomExpressionLBracket() {
+    private Expr parseAtomExpressionLBracket(Location start) {
         if (this.checkSkip(KW_IF)) {
             this.dump("atom_expression_LBracket -> 'if' expression 'then' expression atom_expression_LBracket_IF");
-            this.parseExpression();
+            var expr1 = this.parseExpression();
             if (this.checkSkip(KW_THEN)) {
-                this.parseExpression();
-                this.parseAtomExpressionLBracketIF();
+                var expr2 = this.parseExpression();
+                this.parseAtomExpressionLBracketIF(start, expr1, expr2);
             }
             else
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected 'then'.");
         }
         else if (this.checkSkip(KW_WHILE)) {
             this.dump("atom_expression_LBracket -> 'while' expression ':' expression '}'");
-            this.parseExpression();
+            var expr1 = this.parseExpression();
             if (this.checkSkip(OP_COLON))  {
-                this.parseExpression();
+                var expr2 = this.parseExpression();
                 if (!this.checkSkip(OP_RBRACE))
                     Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected '}' (right curly bracket).");
+                return new While(getFinalPosition(start), expr1, expr2);
             }
             else 
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket: Expected ':' (column).");
@@ -598,18 +626,22 @@ public class Parser {
         }
     }
 
-    // TODO
-    private void parseAtomExpressionLBracketIF() {
-        if (this.checkSkip(OP_RBRACE)) 
+    // DONE
+    private Expr parseAtomExpressionLBracketIF(Location start, Expr expr1, Expr expr2) {
+        if (this.checkSkip(OP_RBRACE)) {
             this.dump("'}'");
+            return new IfThenElse(getFinalPosition(start), expr1, expr2);
+        }
         else if (this.checkSkip(KW_ELSE)) {
             this.dump("'else' expression '}'");
-            this.parseExpression();
+            var expr3 = this.parseExpression();            
             if (!this.checkSkip(OP_RBRACE)) 
                 Report.error(this.getPosition(), "Wrong atom_expression_LBracket_IF: Expected '}' (right curly bracket).");
+            return new IfThenElse(getFinalPosition(start), expr1, expr2, expr3);
         }
         else 
             Report.error(this.getPosition(), "Wrong atom_expression_LBracket_IF.");
+        return null;
     }
 
     // TODO
