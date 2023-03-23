@@ -370,15 +370,16 @@ public class Parser {
     }
 
     // DONE
-    private Expr parseLogicalIorExpression2(Expr right, Location start) {
+    private Expr parseLogicalIorExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_OR)) {
-            this.dump("logical_ior_expression2 -> '|' logical_ior_expression");            
-            var left = this.parseLogicalIorExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.OR, right);
+            this.dump("logical_ior_expression2 -> '|' logical_ior_expression");    
+            var right = this.parseLogicalAndExpression();
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.OR, right);
+            return this.parseLogicalIorExpression2(bin, start);
         }
         else
             this.dump("logical_ior_expression2 -> e");
-        return right;
+        return left;
     }
 
     // DONE
@@ -393,8 +394,9 @@ public class Parser {
     private Expr parseLogicalAndExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_AND)) {
             this.dump("logical_and_expression2 -> '&' logical_and_expression");
-            var right = this.parseLogicalAndExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.AND, right);
+            var right = this.parseCompareExpression();
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.AND, right);
+            return this.parseLogicalAndExpression2(bin, start);
         }
         else                     
             this.dump("logical_and_expression2 -> e");
@@ -458,13 +460,15 @@ public class Parser {
     private Expr parseAdditiveExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_ADD)) {
             this.dump("additive_expression2 -> '+' additive_expression");
-            var right = this.parseAdditiveExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.ADD, right);
+            var right = this.parseMultiplicativeExpression();
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.ADD, right);
+            return this.parseAdditiveExpression2(bin, start);
         }
         else if (this.checkSkip(OP_SUB)) {
             this.dump("additive_expression2 -> '-' additive_expression");
-            var right = this.parseAdditiveExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.SUB, right);
+            var right = this.parseMultiplicativeExpression();
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.SUB, right);
+            return this.parseAdditiveExpression2(bin, start);
         }
         else
             this.dump("additive_expression2 -> e");
@@ -483,18 +487,21 @@ public class Parser {
     private Expr parseMultiplicativeExpression2(Expr left, Location start) {
         if (this.checkSkip(OP_MUL)) {
             this.dump("multiplicative_expression2 -> '*' multiplicative_expression");
-            var right = this.parseMultiplicativeExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.MUL, right);
+            var right = this.parsePrefixExpression(start);
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.MUL, right);
+            return this.parseMultiplicativeExpression2(bin, start);
         }
         else if (this.checkSkip(OP_DIV)) {
             this.dump("multiplicative_expression2 -> '/' multiplicative_expression");
-            var right = this.parseMultiplicativeExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.DIV, right);
+            var right = this.parsePrefixExpression(start);
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.DIV, right);
+            return this.parseMultiplicativeExpression2(bin, start);
         }
         else if (this.checkSkip(OP_MOD)) {
             this.dump("multiplicative_expression2 -> '%' multiplicative_expression");
-            var right = this.parseMultiplicativeExpression();
-            return new Binary(this.getFinalPosition(start), left, Operator.MOD, right);
+            var right = this.parsePrefixExpression(start);
+            var bin = new Binary(this.getFinalPosition(start), left, Operator.MOD, right);
+            return this.parseMultiplicativeExpression2(bin, start);
         }
         else
             this.dump("multiplicative_expression2 -> e");
