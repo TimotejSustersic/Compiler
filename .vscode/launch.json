@@ -11,6 +11,7 @@
             "mainClass": "Main",
             "projectName": "PINSCompiler_70071860",
             "args": "PINS code.txt --dump AST --exec AST"
+            // --dump NAME --exec NAME
         },
     ]
 }
