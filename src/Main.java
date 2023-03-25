@@ -11,7 +11,6 @@ import java.util.Optional;
 
 import cli.PINS;
 import cli.PINS.Phase;
-import compiler.common.PrettyPrintVisitor1;
 import compiler.common.PrettyPrintVisitor2;
 import compiler.lexer.Lexer;
 import compiler.parser.Parser;
@@ -19,6 +18,7 @@ import compiler.parser.ast.def.Def;
 import compiler.seman.common.NodeDescription;
 import compiler.seman.name.NameChecker;
 import compiler.seman.name.env.FastSymbolTable;
+import compiler.seman.name.env.SimpleSymbolTable;
 import compiler.seman.name.env.SymbolTable;
 
 public class Main {
@@ -78,7 +78,8 @@ public class Main {
         /**
          * Izvedi razreševanje imen.
          */
-        SymbolTable symbolTable = new FastSymbolTable();
+        //SymbolTable symbolTable = new FastSymbolTable();
+        SymbolTable symbolTable = new SimpleSymbolTable();
         var definitions = new NodeDescription<Def>();
         var nameChecker = new NameChecker(definitions, symbolTable);
         ast.accept(nameChecker);
