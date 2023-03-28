@@ -18,7 +18,6 @@ import compiler.parser.ast.def.Def;
 import compiler.seman.common.NodeDescription;
 import compiler.seman.name.NameChecker;
 import compiler.seman.name.env.FastSymbolTable;
-import compiler.seman.name.env.SimpleSymbolTable;
 import compiler.seman.name.env.SymbolTable;
 
 public class Main {
@@ -78,8 +77,7 @@ public class Main {
         /**
          * Izvedi razreševanje imen.
          */
-        //SymbolTable symbolTable = new FastSymbolTable();
-        SymbolTable symbolTable = new SimpleSymbolTable();
+        SymbolTable symbolTable = new FastSymbolTable();
         var definitions = new NodeDescription<Def>();
         var nameChecker = new NameChecker(definitions, symbolTable);
         ast.accept(nameChecker);

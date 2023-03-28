@@ -48,8 +48,9 @@ public class NameChecker implements Visitor {
         else if (type instanceof Array)
             this.visit((Array) type);
         else {
-            System.out.println(type.getClass());
-            Report.error("Wrong Type class instance in naming.");
+            // its atom
+            //System.out.println(type.getClass());
+            //Report.error("Wrong Type class instance in naming.");
         }
     }
 
@@ -122,7 +123,10 @@ public class NameChecker implements Visitor {
         this.symbolTable.pushScope();
         
         for (Parameter parameter: funDef.parameters)
-            this.visit((Parameter) parameter);
+            this.nameType(parameter.type);
+        
+        for (Parameter parameter: funDef.parameters)
+            this.insertName(parameter);    
         
         this.nameType(funDef.type);
         this.nameExpr(funDef.body);
@@ -133,8 +137,8 @@ public class NameChecker implements Visitor {
     // DONE
     @Override
     public void visit(Parameter parameter) {
-        this.insertName(parameter);
         this.nameType(parameter.type);
+        this.insertName(parameter);        
     }
 
     // DONE
@@ -152,8 +156,11 @@ public class NameChecker implements Visitor {
 
     @Override
     public void visit(Call call) {
-        var name = new Name(call.position, call.name);
-        visit((Name) name);
+        var nameVar = this.symbolTable.definitionFor(call.name);
+        if (nameVar.isPresent()) 
+            this.definitions.store(nameVar.get(), call);
+        else
+            Report.error(call.position, "Name is empty");       
 
         for (var expr: call.arguments)
             this.nameExpr(expr);
@@ -175,25 +182,20 @@ public class NameChecker implements Visitor {
 
     // DONE
     @Override
-    public void visit(For forLoop) {
-
-        this.symbolTable.pushScope();
-
-        this.nameExpr(forLoop.body);   
+    public void visit(For forLoop) {       
 
         this.visit((Name) forLoop.counter);
         this.nameExpr(forLoop.low);
         this.nameExpr(forLoop.high);
         this.nameExpr(forLoop.step);        
-
-        this.symbolTable.popScope();
+        this.nameExpr(forLoop.body);  
     }
 
     // DONE
     @Override
-    public void visit(Name name) {
+    public void visit(Name name) {    
         var nameVar = this.symbolTable.definitionFor(name.name);
-        if (!nameVar.isEmpty()) 
+        if (nameVar.isPresent()) 
             this.definitions.store(nameVar.get(), name);
         else
             Report.error(name.position, "Name is empty");        
@@ -203,16 +205,17 @@ public class NameChecker implements Visitor {
     @Override
     public void visit(IfThenElse ifThenElse) {
 
+        this.nameExpr(ifThenElse.condition);
         this.nameExpr(ifThenElse.thenExpression);
 
         if (ifThenElse.elseExpression.isPresent())
             this.nameExpr(ifThenElse.elseExpression.get());
     }
 
-    // TODO
+    // DONE
     @Override
     public void visit(Literal literal) {
-        //this.visit(() literal.type);
+        // nothing
     }
 
     @Override
@@ -232,8 +235,7 @@ public class NameChecker implements Visitor {
     public void visit(Where where) {
         this.symbolTable.pushScope();
 
-        for (Def def: where.defs.definitions)
-            this.insertName(def);
+        this.visit(where.defs);
 
         this.nameExpr(where.expr);
 

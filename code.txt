@@ -1,26 +1,10 @@
-fun partition (tab: arr[100] integer, low: integer, high: integer) : integer = (
-    {pivot = tab[high]},
-    {i = (low - 1)},
-    {for j = low, high, i: ({ 
-			if tab[j] <= pivot then ({
-				i = i+1},
-				{tmp = tab[i]},
-				{tab[j] = tab[j]},
-				{tab[j] = tmp}
-        	) {where var tmp: integer}
-		}
-    ) {where var j: integer}
-	},
+fun main(x: integer): integer = (
+    ( {for i = 0, 10, 1:
+        {if i / 2 == 1 | i & 2 != 0 | 1 == i & 'a' != 'b' & 1 != 3 then
+            print(1)
+        }
+      }
+    ) {where var i: integer}
+);
 
-    {tmp = tab[i+1]},
-    {tab[i+1] = tab[high]},
-    {tab[high] = tmp}
-) {where var pivot: integer; var i: integer; var tmp: integer};
-
-fun sort(tab: arr[100] integer, low: integer, high: integer) : integer = (
-    {if low < high then (
-        {pi = partition(tab, low, high)},
-        sort(tab, low, pi-1),
-        sort(tab, pi+1, high)
-    ) {where var pi: integer}}
-)
+fun print(s : string): integer = 0
