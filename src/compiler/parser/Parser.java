@@ -510,20 +510,21 @@ public class Parser {
 
     // DONE
     private Expr parsePrefixExpression(Location start) {
+        var newStart = this.getPosition().start;
         if (this.checkSkip(OP_ADD)){
-            this.dump("prefix_expression -> '+' prefix_expression");
-            var expr = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.ADD);
+            this.dump("prefix_expression -> '+' prefix_expression");            
+            var expr = this.parsePrefixExpression(newStart);
+            return new Unary(this.getFinalPosition(newStart), expr, Unary.Operator.ADD);
         }
         else if (this.checkSkip(OP_SUB)){
             this.dump("prefix_expression -> '-' prefix_expression");
-            var expr = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.SUB);
+            var expr = this.parsePrefixExpression(newStart);
+            return new Unary(this.getFinalPosition(newStart), expr, Unary.Operator.SUB);
         }
         else if (this.checkSkip(OP_NOT)){
             this.dump("prefix_expression -> '!' prefix_expression");
-            var expr = this.parsePrefixExpression(start);
-            return new Unary(this.getFinalPosition(start), expr, Unary.Operator.NOT);
+            var expr = this.parsePrefixExpression(newStart);
+            return new Unary(this.getFinalPosition(newStart), expr, Unary.Operator.NOT);
         }
         else {
             this.dump("prefix_expression -> postfix_expression");
@@ -545,8 +546,8 @@ public class Parser {
             this.dump("postfix_expression2 -> '[' expression ']' postfix_expression2");
             var expr1 = this.parseExpression();
             if (this.checkSkip(OP_RBRACKET)) {
-                var expr2 = this.parsePostfixExpression2(start, expr1);
-                return new Binary(getFinalPosition(start), atomExpr, Operator.ARR, expr2);  
+                var bin = new Binary(getFinalPosition(start), atomExpr, Operator.ARR, expr1);  
+                return parsePostfixExpression2(start, bin);
             }          
             else 
                 Report.error(this.getPosition(), "Wrong postfix_expression: Expected ']' (right bracket).");

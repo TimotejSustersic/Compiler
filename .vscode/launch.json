@@ -10,8 +10,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "PINSCompiler_70071860",
-            //"args": "PINS code.txt --dump AST --exec AST",
-            "args": "PINS code.txt --dump NAME --exec NAME",
+            "args": "PINS code.txt --dump AST --exec AST",
         },
     ]
 }
