@@ -10,7 +10,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "PINSCompiler_8907c570",
-            "args": "PINS code.txt --dump TYP --exec TYP"
+            "args": "PINS code.txt --dump NAME --exec NAME"
         },
         {
             "type": "java",
@@ -18,7 +18,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "PINSCompiler_70071860",
-            "args": "PINS code.txt --dump TYP --exec TYP"
+            "args": "PINS code.txt --dump NAME --exec NAME"
         }
     ]
 }

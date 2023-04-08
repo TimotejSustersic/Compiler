@@ -7,8 +7,6 @@ package compiler.seman.name;
 
 import static common.RequireNonNull.requireNonNull;
 
-import javax.print.attribute.standard.MediaSize.NA;
-
 import common.Report;
 import compiler.common.Visitor;
 import compiler.parser.ast.def.*;
@@ -29,7 +27,7 @@ public class NameChecker implements Visitor {
 
     /**
      * Simbolna tabela.
-     * tuki mas pa ti zase tabelo kamo shranjujes deklaracijo ki j opol najdes in povezavo nardis v definitions
+     * tuki mas pa ti zase tabelo kamo shranjujes deklaracijo ki jo pol najdes in povezavo nardis v definitions
      */
     private SymbolTable symbolTable;
 
@@ -158,9 +156,16 @@ public class NameChecker implements Visitor {
     public void visit(Call call) {
         var nameVar = this.symbolTable.definitionFor(call.name);
         if (nameVar.isPresent()) 
-            this.definitions.store(nameVar.get(), call);
+            if (nameVar.get() instanceof FunDef)
+                this.definitions.store(nameVar.get(), call);      
+            else if (nameVar.get() instanceof VarDef)
+                Report.error(call.position, "Fun Definition is a variable.");   
+            else if (nameVar.get() instanceof TypeDef)
+                Report.error(call.position, "Fun Definition is a type.");   
+            else
+                Report.error(call.position, "Fun Definition is an unknown class");       
         else
-            Report.error(call.position, "Name is empty");       
+            Report.error(call.position, "Fun Definition is doesn't exist.");
 
         for (var expr: call.arguments)
             this.nameExpr(expr);
@@ -195,10 +200,18 @@ public class NameChecker implements Visitor {
     @Override
     public void visit(Name name) {    
         var nameVar = this.symbolTable.definitionFor(name.name);
+
         if (nameVar.isPresent()) 
-            this.definitions.store(nameVar.get(), name);
+            if (nameVar.get() instanceof VarDef)
+                this.definitions.store(nameVar.get(), name);      
+            else if (nameVar.get() instanceof FunDef)
+                Report.error(name.position, "Var Definition is a function.");   
+            else if (nameVar.get() instanceof TypeDef)
+                Report.error(name.position, "Var Definition is a type.");   
+            else
+                Report.error(name.position, "Var Definition is an unknown class.");       
         else
-            Report.error(name.position, "Name is empty");        
+            Report.error(name.position, "Var Definition is doesn't exist.");      
     }
 
     // DONE
@@ -252,9 +265,17 @@ public class NameChecker implements Visitor {
     @Override
     public void visit(TypeName name) {       
         var typeName = this.symbolTable.definitionFor(name.identifier);
-        if (!typeName.isEmpty()) 
-            this.definitions.store(typeName.get(), name);        
+
+        if (typeName.isPresent()) 
+            if (typeName.get() instanceof TypeDef)
+                this.definitions.store(typeName.get(), name);        
+            else if (typeName.get() instanceof VarDef)
+                Report.error(name.position, "Typ Definition is a variable.");   
+            else if (typeName.get() instanceof FunDef)
+                Report.error(name.position, "Typ Definition is a function.");   
+            else
+                Report.error(name.position, "Typ Definition is an unknown class.");       
         else
-            Report.error(name.position, "TypeName is empty");
+            Report.error(name.position, "Typ Definition is doesn't exist.");
     }
 }
