@@ -133,7 +133,14 @@ public abstract class Type {
 
         @Override
         public boolean equals(Type t) {
-            throw new RuntimeException("Implementiraj ...");
+            if ((this.isArray() && t.isArray()) 
+            || (this.isFunction() && t.isFunction())
+            || (this.isInt() && t.isInt())
+            || (this.isLog() && t.isLog()) 
+            || (this.isStr() && t.isStr())
+            )
+                return true;
+            return false;
         }
 
         @Override
