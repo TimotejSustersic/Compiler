@@ -45,8 +45,10 @@ public class TypeChecker implements Visitor {
         var type = this.types.valueFor(ast);
         if (type.isPresent())
             return type.get();
-        else 
-            Report.error(ast.position, "Type isn't present.");
+        else {
+            System.out.println(ast.getClass());
+            Report.error(ast.position, "Type isn't present.");     
+        }   
         return null;
     }
     
@@ -92,12 +94,27 @@ public class TypeChecker implements Visitor {
     public void visit(Defs defs) {
 
         for (Def def: defs.definitions) {
+            //if (def instanceof TypeDef) 
+                //this.visit((TypeDef) def);                     
+            //else if (def instanceof VarDef) 
+                //this.visit((VarDef) def);
+            if (def instanceof FunDef) {
+
+                for (Parameter parameter: ((FunDef) def).parameters)
+                visit(parameter);
+        
+                this.typeType(((FunDef) def).type);
+                this.types.store(this.getType(((FunDef) def).type), ((FunDef) def));
+            }
+        }
+
+        for (Def def: defs.definitions) {
             if (def instanceof TypeDef) 
-                this.visit((TypeDef) def);            
-            else if (def instanceof FunDef) 
-                this.visit((FunDef) def);            
+                this.visit((TypeDef) def);                     
             else if (def instanceof VarDef) 
                 this.visit((VarDef) def);
+            else if (def instanceof FunDef) 
+                this.visit((FunDef) def); 
             else 
                 Report.error("Wrong definition class in type checker");
         }
@@ -107,18 +124,12 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(FunDef funDef) {
 
-        for (Parameter parameter: funDef.parameters)
-            visit(parameter);
-    
-        this.typeType(funDef.type);
         this.typeExpr(funDef.body);
 
         var funType = this.getType(funDef.type);
         var bodyType = this.getType(funDef.body);
 
-        if (funType.equals(bodyType))
-            this.types.store(funType, funDef);
-        else
+        if (!(funType.equals(bodyType)))
             Report.error(funDef.position, "Fun.body and fun.type isn't equal.");
     }
 
@@ -126,7 +137,7 @@ public class TypeChecker implements Visitor {
     public void visit(TypeDef typeDef) {
         this.typeType(typeDef.type);
 
-        this.types.store(this.types.valueFor(typeDef.type).get(), typeDef);
+        this.types.store(this.getType(typeDef.type), typeDef);
     }
 
     @Override
@@ -144,8 +155,17 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(Call call) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+
+        var def = this.definitions.valueFor(call);       
+        
+        if (def.isPresent()) {
+            var type = this.getType(def.get());
+
+            // rule 8.
+            this.types.store(type, call);
+        }
+        else
+            Report.error(call.position, "Call Definition doesn't exist.");
     }
 
     @Override
@@ -153,53 +173,113 @@ public class TypeChecker implements Visitor {
         this.typeExpr(binary.left);
         this.typeExpr(binary.right);
 
-        var leftType = this.types.valueFor(binary.left);
-        var rightType = this.types.valueFor(binary.right);
+        var leftType = this.getType(binary.left);
+        var rightType = this.getType(binary.right);
 
-        if (leftType.isPresent() && rightType.isPresent()) 
-            if (leftType.get().equals(rightType.get()))
-                this.types.store(leftType.get(), binary);
-            else
-                Report.error(binary.position, "Binary type isn't equal.");        
-        else 
-            Report.error(binary.position, "Binary Type doesn't exists.");        
+        var intType = new Type.Atom(Type.Atom.Kind.INT);
+        //var strType = new Type.Atom(Type.Atom.Kind.STR);
+        var logType = new Type.Atom(Type.Atom.Kind.LOG);
+        //var voidType = new Type.Atom(Type.Atom.Kind.VOID);
+
+        // rule 4.
+        if (leftType.isLog() && rightType.isLog() &&  (
+           binary.operator == Binary.Operator.AND
+        || binary.operator == Binary.Operator.OR
+        ))
+            this.types.store(logType, binary);
+        // rule 5.
+        else if (leftType.isInt() && rightType.isInt() && (
+           binary.operator == Binary.Operator.ADD
+        || binary.operator == Binary.Operator.SUB
+        || binary.operator == Binary.Operator.MUL
+        || binary.operator == Binary.Operator.DIV
+        || binary.operator == Binary.Operator.MOD
+        ))
+            this.types.store(intType, binary);
+        // rule 6.
+        else if (
+           leftType.isInt() 
+        || leftType.isLog() 
+        || rightType.isInt() 
+        || rightType.isLog() 
+            && (
+           binary.operator == Binary.Operator.EQ
+        || binary.operator == Binary.Operator.NEQ
+        || binary.operator == Binary.Operator.LT
+        || binary.operator == Binary.Operator.LEQ
+        || binary.operator == Binary.Operator.GT
+        || binary.operator == Binary.Operator.GEQ 
+        )) 
+            this.types.store(logType, binary);
+        // rule 10.
+        else if (leftType.equals(rightType) && binary.operator == Binary.Operator.ASSIGN )
+            this.types.store(leftType, binary);
+        else
+            Report.error(binary.position, "Binary type missmatch."); 
     }
 
     @Override
     public void visit(Block block) {
+        System.out.println("neki");
         Type exprType = null;
         for (var expr: block.expressions) {
             this.typeExpr(expr);
-            exprType = this.types.valueFor(expr).get();
+            exprType = this.getType(expr);
+
+            // rule 13.
             this.types.store(exprType, expr); 
         }
+        // probi ce se da brez
         this.types.store(exprType, block);     
     }
 
     @Override
     public void visit(For forLoop) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
+        this.visit((Name) forLoop.counter);
+        this.typeExpr(forLoop.low);
+        this.typeExpr(forLoop.high);
+        this.typeExpr(forLoop.step);        
+        this.typeExpr(forLoop.body); 
+
+        // rule 12.
+        if (this.getType(forLoop.counter).isInt()
+        && this.getType(forLoop.low).isInt()
+        && this.getType(forLoop.high).isInt()
+        && this.getType(forLoop.step).isInt()
+        ) 
+            this.types.store(new Type.Atom(Type.Atom.Kind.VOID), forLoop);    
+        else
+            Report.error(forLoop.position, "forLoop isn't the right type.");
     }
 
     @Override
     public void visit(Name name) {
 
         var def = this.definitions.valueFor(name);
-        var type = this.types.valueFor(def.get());
-        if (def.isPresent()) 
-            if (type.isPresent()) 
-                this.types.store(type.get(), name);       
-            else
-                Report.error(name.position, "TypName Type doesn't exist.");
+       
+        if (def.isPresent()) {
+            var type = this.getType(def.get());
+            this.types.store(type, name);
+        }
         else
-            Report.error(name.position, "TypName Definition doesn't exist.");
+            Report.error(name.position, "Name Definition doesn't exist.");
     }
 
     @Override
     public void visit(IfThenElse ifThenElse) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+
+        this.typeExpr(ifThenElse.condition);
+        this.typeExpr(ifThenElse.thenExpression);
+
+        if (ifThenElse.elseExpression.isPresent())
+            this.typeExpr(ifThenElse.elseExpression.get());
+
+        // rule 11.
+        if (this.getType(ifThenElse.condition).isLog()) 
+                this.types.store(new Type.Atom(Type.Atom.Kind.VOID), ifThenElse);
+        else
+            Report.error(ifThenElse.position, "IfThenElse isn't the right type.");
     }
 
     @Override
@@ -217,26 +297,56 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(Unary unary) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.typeExpr(unary.expr);
+
+        var exprType = this.getType(unary.expr);
+
+        // rule 2.
+        if (exprType.isLog() && unary.operator == Unary.Operator.NOT) 
+            this.types.store(exprType, unary);  
+        // rule 3.  
+        else if (exprType.isInt() && (
+           unary.operator == Unary.Operator.ADD
+        || unary.operator == Unary.Operator.SUB
+            )) 
+            this.types.store(exprType, unary);    
+        else
+            Report.error(unary.position, "Unary isn't the right type.");
     }
 
     @Override
     public void visit(While whileLoop) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.typeExpr(whileLoop.condition);
+        this.typeExpr(whileLoop.body);
+
+        // rule 11.
+        if (this.getType(whileLoop.condition).isLog()) 
+                this.types.store(new Type.Atom(Type.Atom.Kind.VOID), whileLoop);
+        else
+            Report.error(whileLoop.position, "IfThenElse isn't the right type.");
     }
 
     @Override
     public void visit(Where where) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+
+        this.visit(where.defs);
+        this.typeExpr(where.expr);
+
+        // rule 9.
+        this.types.store(this.getType(where.expr), where);
     }
 
     @Override
     public void visit(Array array) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+
+        this.typeType(array.type);
+        var arraytype = this.getType(array.type);
+
+        // rule 7.
+        if (arraytype.isArray()) 
+            this.types.store(arraytype, array);
+        else
+            Report.error(array.position, "Array isn't the right type.");
     }
 
     // DONE
@@ -258,12 +368,11 @@ public class TypeChecker implements Visitor {
     public void visit(TypeName name) {
         
         var def = this.definitions.valueFor(name);
-        var type = this.types.valueFor(def.get());
-        if (def.isPresent()) 
-            if (type.isPresent()) 
-                this.types.store(type.get(), name);       
-            else
-                Report.error(name.position, "TypName Type doesn't exist.");
+        
+        if (def.isPresent()) {
+            var type = this.getType(def.get());
+                this.types.store(type, name);
+        }
         else
             Report.error(name.position, "TypName Definition doesn't exist.");
     }

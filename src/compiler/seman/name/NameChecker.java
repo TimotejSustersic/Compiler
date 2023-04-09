@@ -158,14 +158,14 @@ public class NameChecker implements Visitor {
         if (nameVar.isPresent()) 
             if (nameVar.get() instanceof FunDef)
                 this.definitions.store(nameVar.get(), call);      
-            else if (nameVar.get() instanceof VarDef)
+            else if (nameVar.get() instanceof VarDef || nameVar.get() instanceof Parameter)
                 Report.error(call.position, "Fun Definition is a variable.");   
             else if (nameVar.get() instanceof TypeDef)
                 Report.error(call.position, "Fun Definition is a type.");   
             else
                 Report.error(call.position, "Fun Definition is an unknown class");       
         else
-            Report.error(call.position, "Fun Definition is doesn't exist.");
+            Report.error(call.position, "Fun Definition doesn't exist.");
 
         for (var expr: call.arguments)
             this.nameExpr(expr);
@@ -200,18 +200,18 @@ public class NameChecker implements Visitor {
     @Override
     public void visit(Name name) {    
         var nameVar = this.symbolTable.definitionFor(name.name);
-
+        
         if (nameVar.isPresent()) 
-            if (nameVar.get() instanceof VarDef)
-                this.definitions.store(nameVar.get(), name);      
-            else if (nameVar.get() instanceof FunDef)
-                Report.error(name.position, "Var Definition is a function.");   
+            if (nameVar.get() instanceof VarDef || nameVar.get() instanceof Parameter)
+                this.definitions.store(nameVar.get(), name);     
             else if (nameVar.get() instanceof TypeDef)
-                Report.error(name.position, "Var Definition is a type.");   
+                Report.error(name.position, "Var Definition is a type.");  
+            else if (nameVar.get() instanceof FunDef)
+                Report.error(name.position, "Var Definition is a function.");
             else
                 Report.error(name.position, "Var Definition is an unknown class.");       
         else
-            Report.error(name.position, "Var Definition is doesn't exist.");      
+            Report.error(name.position, "Var Definition doesn't exist.");      
     }
 
     // DONE
@@ -269,13 +269,13 @@ public class NameChecker implements Visitor {
         if (typeName.isPresent()) 
             if (typeName.get() instanceof TypeDef)
                 this.definitions.store(typeName.get(), name);        
-            else if (typeName.get() instanceof VarDef)
+            else if (typeName.get() instanceof VarDef || typeName.get() instanceof Parameter)
                 Report.error(name.position, "Typ Definition is a variable.");   
             else if (typeName.get() instanceof FunDef)
                 Report.error(name.position, "Typ Definition is a function.");   
             else
                 Report.error(name.position, "Typ Definition is an unknown class.");       
         else
-            Report.error(name.position, "Typ Definition is doesn't exist.");
+            Report.error(name.position, "Typ Definition doesn't exist.");
     }
 }
