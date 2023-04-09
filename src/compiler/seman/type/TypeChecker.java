@@ -7,6 +7,8 @@ package compiler.seman.type;
 
 import static common.RequireNonNull.requireNonNull;
 
+import java.util.ArrayList;
+
 import common.Report;
 import compiler.common.Visitor;
 import compiler.parser.ast.Ast;
@@ -46,14 +48,21 @@ public class TypeChecker implements Visitor {
         if (type.isPresent())
             return type.get();
         else {
-            System.out.println(ast.getClass());
-            Report.error(ast.position, "Type isn't present.");     
-        }   
+            var def = new ArrayList<Def>();
+            def.add((Def) ast);
+            var defs = new Defs(ast.position, def);
+            visit((Defs) defs);
+            type = this.types.valueFor(ast);
+            if (type.isPresent())
+                return type.get();
+            else
+            Report.error(ast.position, "Type isn't present.");
+        }            
         return null;
     }
     
     private void typeExpr(Expr expr) {
-        //System.out.println(expr.getClass());
+        
         if (expr instanceof Binary)
             visit((Binary) expr);       
         else if (expr instanceof Name)
@@ -74,10 +83,8 @@ public class TypeChecker implements Visitor {
             visit((While) expr);
         else if (expr instanceof Unary)
             visit((Unary) expr);
-        else {
-            System.out.println(expr.getClass());
-            Report.error("Wrong expression class instance in naming.");
-        }
+        else 
+            Report.error("Wrong expression class instance in naming.");        
     }
     
     private void typeType(compiler.parser.ast.type.Type type) {
@@ -220,7 +227,7 @@ public class TypeChecker implements Visitor {
 
     @Override
     public void visit(Block block) {
-        System.out.println("neki");
+        
         Type exprType = null;
         for (var expr: block.expressions) {
             this.typeExpr(expr);
