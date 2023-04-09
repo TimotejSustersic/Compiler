@@ -32,33 +32,34 @@ public class TypeChecker implements Visitor {
      */
     private NodeDescription<Type> types;
 
+    //private Ast recursionNode = null;
+
     public TypeChecker(NodeDescription<Def> definitions, NodeDescription<Type> types) {
         requireNonNull(definitions, types);
         this.definitions = definitions;
         this.types = types;
     }
 
-    // DFS
-    private boolean isLoop() {
-        return false;
-    }
-
     private Type getType(Ast ast) {
+        // if (this.recursionNode != null)
+        //     if (this.recursionNode == ast) {
+        //         Report.error(ast.position, "Recursion in finding type.");
+        //         return null;
+        //     }
+
         var type = this.types.valueFor(ast);
-        if (type.isPresent())
+        if (type.isPresent()) {
+            //this.recursionNode = null;
             return type.get();
+        }
         else {
+            //this.recursionNode = ast;
             var def = new ArrayList<Def>();
             def.add((Def) ast);
-            var defs = new Defs(ast.position, def);
-            visit((Defs) defs);
-            type = this.types.valueFor(ast);
-            if (type.isPresent())
-                return type.get();
-            else
-            Report.error(ast.position, "Type isn't present.");
-        }            
-        return null;
+            visit(new Defs(ast.position, def));
+
+            return this.getType(ast);
+        } 
     }
     
     private void typeExpr(Expr expr) {
@@ -143,6 +144,14 @@ public class TypeChecker implements Visitor {
     @Override
     public void visit(TypeDef typeDef) {
         this.typeType(typeDef.type);
+
+        // if (this.recursionNode != null) {
+        //     System.out.println(recursionNode.toString());
+        //     Report.error(typeDef.position, "Recursion.");
+        //     if (this.recursionNode == typeDef.type) {
+        //         Report.error(typeDef.position, "Recursion in finding type.");
+        //     }
+        // }
 
         this.types.store(this.getType(typeDef.type), typeDef);
     }
