@@ -49,8 +49,14 @@ public class TypeChecker implements Visitor {
 
         var type = this.types.valueFor(ast);
         if (type.isPresent()) {
+            var typeGet = type.get();
+            if (typeGet.isFunction())
+                typeGet = typeGet.asFunction().get().returnType;
+            //else if (typeGet.isArray())
+                //typeGet = typeGet.asArray().get().type;
+                
             //this.recursionNode = null;
-            return type.get();
+            return typeGet;
         }
         else {
             //this.recursionNode = ast;
@@ -108,11 +114,18 @@ public class TypeChecker implements Visitor {
                 //this.visit((VarDef) def);
             if (def instanceof FunDef) {
 
-                for (Parameter parameter: ((FunDef) def).parameters)
-                visit(parameter);
+                var listParams = new ArrayList<Type>();
+
+                for (Parameter parameter: ((FunDef) def).parameters) {
+                    visit(parameter);
+                    listParams.add(this.getType(parameter));
+                }
         
                 this.typeType(((FunDef) def).type);
-                this.types.store(this.getType(((FunDef) def).type), ((FunDef) def));
+
+                Type funType = new Type.Function(listParams, this.getType(((FunDef) def).type));
+                
+                this.types.store(funType, ((FunDef) def));
             }
         }
 
@@ -179,6 +192,9 @@ public class TypeChecker implements Visitor {
 
             // rule 8.
             this.types.store(type, call);
+
+            for (var expr: call.arguments)
+                this.typeExpr(expr);
         }
         else
             Report.error(call.position, "Call Definition doesn't exist.");
@@ -197,8 +213,11 @@ public class TypeChecker implements Visitor {
         var logType = new Type.Atom(Type.Atom.Kind.LOG);
         //var voidType = new Type.Atom(Type.Atom.Kind.VOID);
 
+        // rule 7.
+        if (leftType.isArray() && rightType.isInt()) 
+            this.types.store(leftType.asArray().get().type, binary);        
         // rule 4.
-        if (leftType.isLog() && rightType.isLog() &&  (
+        else if (leftType.isLog() && rightType.isLog() &&  (
            binary.operator == Binary.Operator.AND
         || binary.operator == Binary.Operator.OR
         ))
@@ -357,12 +376,10 @@ public class TypeChecker implements Visitor {
 
         this.typeType(array.type);
         var arraytype = this.getType(array.type);
+        
+        Type arr = new Type.Array(array.size, arraytype);
 
-        // rule 7.
-        if (arraytype.isArray()) 
-            this.types.store(arraytype, array);
-        else
-            Report.error(array.position, "Array isn't the right type.");
+        this.types.store(arr, array);
     }
 
     // DONE

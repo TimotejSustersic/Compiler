@@ -186,12 +186,12 @@ public abstract class Type {
 
         @Override
         public int sizeInBytes() {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 11...");
         }
 
         @Override
         public int sizeInBytesAsParam() {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 12...");
         }
 
         public int elementSizeInBytes() {
@@ -200,7 +200,7 @@ public abstract class Type {
 
         @Override
         public boolean equals(Type t) {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 13...");
         }
 
         @Override
@@ -232,17 +232,17 @@ public abstract class Type {
 
         @Override
         public int sizeInBytes() {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 1...");
         }
 
         @Override
         public int sizeInBytesAsParam() {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 2...");
         }
 
         @Override
         public boolean equals(Type t) {
-            throw new RuntimeException("Implementiraj ...");
+            throw new RuntimeException("Implementiraj 3...");
         }
 
         @Override
