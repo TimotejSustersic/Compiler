@@ -52,6 +52,34 @@ public class FrameEvaluator implements Visitor {
     }
 
     @Override
+    public void visit(Defs defs) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+    }
+
+
+    @Override
+    public void visit(FunDef funDef) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+    }
+
+
+    @Override
+    public void visit(TypeDef typeDef) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+    }
+
+
+    @Override
+    public void visit(VarDef varDef) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+    }
+
+
+    @Override
     public void visit(Call call) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'visit'");
@@ -119,35 +147,6 @@ public class FrameEvaluator implements Visitor {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'visit'");
     }
-
-
-    @Override
-    public void visit(Defs defs) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
-    public void visit(FunDef funDef) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
-    public void visit(TypeDef typeDef) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
-    public void visit(VarDef varDef) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
 
     @Override
     public void visit(Parameter parameter) {
