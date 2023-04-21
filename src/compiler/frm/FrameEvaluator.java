@@ -7,7 +7,10 @@ package compiler.frm;
 
 import static common.RequireNonNull.requireNonNull;
 
+import java.util.Stack;
+
 import compiler.common.Visitor;
+import compiler.frm.Frame.Builder;
 import compiler.frm.Frame.Label;
 import compiler.parser.ast.def.*;
 import compiler.parser.ast.def.FunDef.Parameter;
@@ -20,7 +23,14 @@ import compiler.seman.type.type.Type;
 
 public class FrameEvaluator implements Visitor {
 
-    int staticLevel = 0;
+    int staticLevel = 1;
+
+    /**
+     * Stack builderjev, ker builder ne mores zaklucit dokler ni konc klica zato mas stack
+    */
+    private Stack<Builder> builders;
+
+
     /**
      * Opis definicij funkcij in njihovih klicnih zapisov.
      */
@@ -54,11 +64,42 @@ public class FrameEvaluator implements Visitor {
         this.types = types;
     }
 
-    private void addGlobal(Def def) {
+    private void addAccess(Def def) {
         Type type = this.types.valueFor(def).get();
-        Label label = Label.named(def.name);
-        var access = new Access.Global(type.sizeInBytes(), label);
-        this.accesses.store(access, def);
+
+        // global
+        if (this.staticLevel == 1) {
+            Label label = Label.named(def.name);
+            var access = new Access.Global(type.sizeInBytes(), label);
+            this.accesses.store(access, def);
+        }
+        // lokal
+        else {
+
+        }
+    }
+
+    private void proccesExpr(Expr expr) {
+        if (expr instanceof Binary)
+            visit((Binary) expr);       
+        else if (expr instanceof Name)
+            visit((Name) expr); 
+        else if (expr instanceof Block)
+            visit((Block) expr);
+        else if (expr instanceof Where)
+            visit((Where) expr);
+        else if (expr instanceof For)
+            visit((For) expr);
+        else if (expr instanceof Literal)
+            visit((Literal) expr);
+        else if (expr instanceof IfThenElse)
+            visit((IfThenElse) expr);
+        else if (expr instanceof Call)
+            visit((Call) expr);
+        else if (expr instanceof While)
+            visit((While) expr);
+        else if (expr instanceof Unary)
+            visit((Unary) expr);
     }
 
     @Override
@@ -74,131 +115,131 @@ public class FrameEvaluator implements Visitor {
         }
     }
 
-
     @Override
     public void visit(FunDef funDef) {
-
-        this.staticLevel++;
-
+        this.addAccess(funDef);
         //var funType = this.types.valueFor(funDef.type).get();
         //var bodyType = this.types.valueFor(funDef.body).get();
 
-        var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
+        this.proccesExpr(funDef.body);
+    }
 
-        for (Parameter parameter: funDef.parameters) 
-            builder.addParameter(this.types.valueFor(parameter).get().sizeInBytesAsParam());
 
-        this.frames.store(builder.build(), funDef);
+    @Override
+    public void visit(TypeDef typeDef) {
+       this.addAccess(typeDef);
+    }
+
+
+    @Override
+    public void visit(VarDef varDef) {
+        this.addAccess(varDef);
+    }
+
+
+    @Override
+    public void visit(Call call) {
+        // call can be multiple so they have next anoynimus label
+        var builder = new Frame.Builder(Label.nextAnonymous(), this.staticLevel);
+
+        for (Expr arg: call.arguments) {
+            this.proccesExpr(arg);
+            builder.addParameter(this.types.valueFor(arg).get().sizeInBytesAsParam());
+        }
+
+        this.frames.store(builder.build(), call);
+    }
+
+
+    @Override
+    public void visit(Binary binary) {
+        this.proccesExpr(binary.left);
+        this.proccesExpr(binary.right);
+    }
+
+
+    @Override
+    public void visit(Block block) {
+        this.staticLevel++;
+
+        for (Expr expr : block.expressions) 
+            this.proccesExpr(expr);
 
         this.staticLevel--;
     }
 
 
     @Override
-    public void visit(TypeDef typeDef) {
-       this.addGlobal(typeDef);
-    }
-
-
-    @Override
-    public void visit(VarDef varDef) {
-        this.addGlobal(varDef);
-    }
-
-
-    @Override
-    public void visit(Call call) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
-    public void visit(Binary binary) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
-    public void visit(Block block) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
-    }
-
-
-    @Override
     public void visit(For forLoop) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.proccesExpr(forLoop.body);        
     }
 
 
     @Override
     public void visit(Name name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
     }
 
 
     @Override
     public void visit(IfThenElse ifThenElse) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.proccesExpr(ifThenElse.condition);
+        this.proccesExpr(ifThenElse.thenExpression);
+
+        if (ifThenElse.elseExpression.isPresent())
+            this.proccesExpr(ifThenElse.elseExpression.get());
     }
 
 
     @Override
     public void visit(Literal literal) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
     }
 
 
     @Override
     public void visit(Unary unary) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.proccesExpr(unary.expr);
     }
 
 
     @Override
     public void visit(While whileLoop) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.proccesExpr(whileLoop.condition);
+        this.proccesExpr(whileLoop.body);
     }
 
 
     @Override
     public void visit(Where where) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.staticLevel++;
+
+        this.proccesExpr(where.expr);
+        visit((Defs) where.defs);
+
+        this.staticLevel--;
     }
 
     @Override
     public void visit(Parameter parameter) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        this.addAccess(parameter);
     }
 
 
     @Override
     public void visit(Array array) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
     }
 
 
     @Override
     public void visit(Atom atom) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
     }
 
 
     @Override
     public void visit(TypeName name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        
     }
 }
