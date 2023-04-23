@@ -125,6 +125,10 @@ public class FrameEvaluator implements Visitor {
 
     @Override
     public void visit(FunDef funDef) {
+
+        if (!builders.empty())
+            this.staticLevel++;
+
         this.addAccess(funDef);
         var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
         this.builders.add(builder);
@@ -148,6 +152,9 @@ public class FrameEvaluator implements Visitor {
 
         this.frames.store(builder.build(), funDef);
         this.builders.pop();
+
+        if (!builders.empty())
+            this.staticLevel--;
     }
 
 
