@@ -25,10 +25,14 @@ public class FrameEvaluator implements Visitor {
 
     int staticLevel = 1;
 
+    int oldFramePointer = 4; // Byte
+
+    int localOffset = 0;
+
     /**
      * Stack builderjev, ker builder ne mores zaklucit dokler ni konc klica zato mas stack
     */
-    private Stack<Builder> builders;
+    private Stack<Builder> builders = new Stack<Builder>();
 
 
     /**
@@ -68,15 +72,17 @@ public class FrameEvaluator implements Visitor {
         Type type = this.types.valueFor(def).get();
 
         // global
-        if (this.staticLevel == 1) {
+        if (builders.empty()) {
             Label label = Label.named(def.name);
             var access = new Access.Global(type.sizeInBytes(), label);
             this.accesses.store(access, def);
         }
         // lokal
         else {
-            var access = new Access.Local(type.sizeInBytes(), 4, this.staticLevel);
+            this.localOffset -= type.sizeInBytes();
+            var access = new Access.Local(type.sizeInBytes(), this.localOffset, this.builders.lastElement().staticLevel);
             this.accesses.store(access, def);
+            this.builders.lastElement().addLocalVariable(type.sizeInBytes());            
         }
     }
 
@@ -121,22 +127,27 @@ public class FrameEvaluator implements Visitor {
     public void visit(FunDef funDef) {
         this.addAccess(funDef);
         var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
+        this.builders.add(builder);
 
-        this.staticLevel++;
+        int offset = 0;
+        this.localOffset = 0;
+        
+        builder.addParameter(oldFramePointer);
+        offset += oldFramePointer;
+
 
         for (Parameter param : funDef.parameters) {
             Type type = this.types.valueFor(param).get();
-            builder.addParameter(type.sizeInBytesAsParam());
-            var access = new Access.Parameter(type.sizeInBytesAsParam(), 4, this.staticLevel);
+            builder.addParameter(type.sizeInBytesAsParam());           
+            var access = new Access.Parameter(type.sizeInBytesAsParam(), offset, this.staticLevel);
             this.accesses.store(access, param);
-            
+            offset += type.sizeInBytesAsParam();
         }
 
         this.proccesExpr(funDef.body);
 
         this.frames.store(builder.build(), funDef);
-
-        this.staticLevel--;
+        this.builders.pop();
     }
 
 
@@ -154,15 +165,30 @@ public class FrameEvaluator implements Visitor {
 
     @Override
     public void visit(Call call) {
+
+        this.staticLevel++;
+
+        var parent = this.builders.lastElement();
+        int argumentsSize = 0;
+        argumentsSize += oldFramePointer;
+
         // call can be multiple so they have next anoynimus label
         var builder = new Frame.Builder(Label.nextAnonymous(), this.staticLevel);
+        this.builders.add(builder);
 
         for (Expr arg: call.arguments) {
             this.proccesExpr(arg);
-            builder.addParameter(this.types.valueFor(arg).get().sizeInBytes());
+            var size = this.types.valueFor(arg).get().sizeInBytes();
+            builder.addParameter(size);
+            argumentsSize += size;
         }
 
+        parent.addFunctionCall(argumentsSize);
+
         this.frames.store(builder.build(), call);
+        this.builders.pop();
+
+        this.staticLevel--;
     }
 
 
@@ -175,12 +201,8 @@ public class FrameEvaluator implements Visitor {
 
     @Override
     public void visit(Block block) {
-        this.staticLevel++;
-
         for (Expr expr : block.expressions) 
             this.proccesExpr(expr);
-
-        this.staticLevel--;
     }
 
 
@@ -227,12 +249,8 @@ public class FrameEvaluator implements Visitor {
 
     @Override
     public void visit(Where where) {
-        this.staticLevel++;
-
-        this.proccesExpr(where.expr);
         visit((Defs) where.defs);
-
-        this.staticLevel--;
+        this.proccesExpr(where.expr);
     }
 
     @Override
