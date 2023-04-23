@@ -128,7 +128,7 @@ public abstract class Type {
 
         @Override
         public int sizeInBytesAsParam() {
-            throw new RuntimeException("Implementiraj ...");
+            return 4;
         }
 
         @Override
@@ -232,7 +232,7 @@ public abstract class Type {
 
         @Override
         public int sizeInBytes() {
-            throw new RuntimeException("Implementiraj 1...");
+            return 4;
         }
 
         @Override

@@ -75,7 +75,8 @@ public class FrameEvaluator implements Visitor {
         }
         // lokal
         else {
-
+            var access = new Access.Local(type.sizeInBytes(), 4, this.staticLevel);
+            this.accesses.store(access, def);
         }
     }
 
@@ -115,13 +116,27 @@ public class FrameEvaluator implements Visitor {
         }
     }
 
+
     @Override
     public void visit(FunDef funDef) {
         this.addAccess(funDef);
-        //var funType = this.types.valueFor(funDef.type).get();
-        //var bodyType = this.types.valueFor(funDef.body).get();
+        var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
+
+        this.staticLevel++;
+
+        for (Parameter param : funDef.parameters) {
+            Type type = this.types.valueFor(param).get();
+            builder.addParameter(type.sizeInBytesAsParam());
+            var access = new Access.Parameter(type.sizeInBytesAsParam(), 4, this.staticLevel);
+            this.accesses.store(access, param);
+            
+        }
 
         this.proccesExpr(funDef.body);
+
+        this.frames.store(builder.build(), funDef);
+
+        this.staticLevel--;
     }
 
 
@@ -144,7 +159,7 @@ public class FrameEvaluator implements Visitor {
 
         for (Expr arg: call.arguments) {
             this.proccesExpr(arg);
-            builder.addParameter(this.types.valueFor(arg).get().sizeInBytesAsParam());
+            builder.addParameter(this.types.valueFor(arg).get().sizeInBytes());
         }
 
         this.frames.store(builder.build(), call);

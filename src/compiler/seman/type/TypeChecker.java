@@ -216,6 +216,9 @@ public class TypeChecker implements Visitor {
         // rule 7.
         if (leftType.isArray() && rightType.isInt()) 
             this.types.store(leftType.asArray().get().type, binary);        
+                    // rule 10.
+        else if (leftType.equals(rightType) && binary.operator == Binary.Operator.ASSIGN )
+            this.types.store(leftType, binary);
         // rule 4.
         else if (leftType.isLog() && rightType.isLog() &&  (
            binary.operator == Binary.Operator.AND
@@ -246,9 +249,6 @@ public class TypeChecker implements Visitor {
         || binary.operator == Binary.Operator.GEQ 
         )) 
             this.types.store(logType, binary);
-        // rule 10.
-        else if (leftType.equals(rightType) && binary.operator == Binary.Operator.ASSIGN )
-            this.types.store(leftType, binary);
         else
             Report.error(binary.position, "Binary type missmatch."); 
     }
