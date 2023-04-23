@@ -200,7 +200,7 @@ public abstract class Type {
 
         @Override
         public boolean equals(Type t) {
-            throw new RuntimeException("Implementiraj 13...");
+            return (this.isArray() && t.isArray() && this.type == t.asArray().get().type);
         }
 
         @Override
@@ -232,17 +232,17 @@ public abstract class Type {
 
         @Override
         public int sizeInBytes() {
-            return 4;
+            return 0;
         }
 
         @Override
         public int sizeInBytesAsParam() {
-            throw new RuntimeException("Implementiraj 2...");
+            return 0;
         }
 
         @Override
         public boolean equals(Type t) {
-            throw new RuntimeException("Implementiraj 3...");
+            return (this.isFunction() && t.isFunction() && this.returnType == t.asFunction().get().returnType); 
         }
 
         @Override

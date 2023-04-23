@@ -82,7 +82,7 @@ public class FrameEvaluator implements Visitor {
             this.localOffset -= type.sizeInBytes();
             var access = new Access.Local(type.sizeInBytes(), this.localOffset, this.builders.lastElement().staticLevel);
             this.accesses.store(access, def);
-            this.builders.lastElement().addLocalVariable(type.sizeInBytes());            
+            this.builders.lastElement().addLocalVariable(type.sizeInBytes());
         }
     }
 
