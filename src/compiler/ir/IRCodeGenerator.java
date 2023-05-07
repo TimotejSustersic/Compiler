@@ -10,7 +10,6 @@ import static common.RequireNonNull.requireNonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import common.Constants;
 import common.Report;
 import compiler.common.Visitor;
 import compiler.frm.Access;
@@ -23,6 +22,7 @@ import compiler.ir.code.IRNode;
 import compiler.ir.code.expr.*;
 import compiler.ir.code.expr.BinopExpr.Operator;
 import compiler.ir.code.stmt.*;
+import compiler.parser.ast.Ast;
 import compiler.parser.ast.def.*;
 import compiler.parser.ast.def.FunDef.Parameter;
 import compiler.parser.ast.expr.*;
@@ -88,13 +88,54 @@ public class IRCodeGenerator implements Visitor {
     }
 
     private IRNode getIRNode(Expr expr) {
+
         this.parseExpr(expr);
         var IRE = this.imcCode.valueFor(expr);
 
         if (IRE.isPresent()) 
             return (IRNode) IRE.get();
         
-        Report.error(expr.position, "Epression" + expr.getClass().getName() + " code not found");
+        Report.error(expr.position, "Epression " + expr.getClass().getSimpleName() + " code not found.");
+        return null;
+    }
+
+    private Frame getFrame(Ast expr) {
+        var frame = this.frames.valueFor(expr);
+
+        if (frame.isPresent()) 
+            return  frame.get();
+        
+        Report.error(expr.position, "Frame for " + expr.getClass().getSimpleName() + " not found.");
+        return null;
+    }
+
+    private Def getDefinition(Ast expr) {
+        var definition = this.definitions.valueFor(expr);
+
+        if (definition.isPresent()) 
+            return  definition.get();
+        
+        Report.error(expr.position, "Definition for " + expr.getClass().getSimpleName() + " not found.");
+        return null;
+    }
+
+    private Access getAccess(Ast expr) {
+        var access = this.accesses.valueFor(expr);
+
+        if (access.isPresent()) 
+            return access.get();
+        
+        Report.error(expr.position, "Access for " + expr.getClass().getSimpleName() + " not found.");
+        return null;
+    }
+
+    private Type getType(Ast expr) {
+        var type = this.types.valueFor(expr);
+
+        if (type.isPresent()) 
+            return type.get();
+        
+        Report.error(expr.position, "Type for " + expr.getClass().getSimpleName() + " not found.");
         return null;
     }
 
@@ -115,45 +156,31 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(Call call) {
-        var frame = this.frames.valueFor(call);
-        if (!frame.isPresent())
-            Report.error(call.position, "Call frame not found");
 
+        var frame = this.getFrame(call);
         var args = new ArrayList<IRExpr>();
 
         for (Expr arg: call.arguments) {
-
-            this.parseExpr(arg);
-            var argCode = imcCode.valueFor(arg);
-
-            if (argCode.isPresent())
-                args.add((IRExpr) imcCode.valueFor(arg).get());
-            else  
-                Report.error(arg.position, "Argument code not found");
+            var argCode = this.getIRNode(arg);
+            args.add((IRExpr) argCode);
         }
 
-        var code = new CallExpr(frame.get().label, args);
+        var code = new CallExpr(frame.label, args);
         imcCode.store(code, call);
     }
 
     @Override
     public void visit(Binary binary) {
 
-        this.parseExpr(binary.left);
-        this.parseExpr(binary.right);
+        var lhs = getIRNode(binary.left);
+        var rhs = getIRNode(binary.right);
 
-        var lhs = imcCode.valueFor(binary.left);
-        var rhs = imcCode.valueFor(binary.right);
-
-        var Lmem = new MemExpr((IRExpr) lhs.get());
-        var Rmem = new MemExpr((IRExpr) rhs.get());
-
-        if (!(lhs.isPresent() && rhs.isPresent()))
-            Report.error(binary.position, "Binary expression isn't present");
+        var Lmem = new MemExpr((IRExpr) lhs);
+        var Rmem = new MemExpr((IRExpr) rhs);
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {
             
-            var move = new MoveStmt((IRExpr) lhs.get(), Rmem);
+            var move = new MoveStmt((IRExpr) lhs, Rmem);
             imcCode.store(move, binary);  
         }
         else {            
@@ -165,8 +192,10 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(Block block) {
-        for (Expr expr: block.expressions)
-           this.parseExpr(expr);
+        for (Expr expr: block.expressions) {
+           var code = this.getIRNode(expr);
+           imcCode.store(code, block); 
+        }
     }
 
     @Override
@@ -223,48 +252,33 @@ public class IRCodeGenerator implements Visitor {
     // tko da vedno vrne naslov in mors pol naknadno mem delat
     @Override
     public void visit(Name name) {
-        var defined = this.definitions.valueFor(name);
-
-        if (!defined.isPresent())
-            Report.error(name.position, "Name nima definicije.");
-
-        var acc = this.accesses.valueFor(defined.get());
-
-        if (!acc.isPresent())
-            Report.error(name.position, "Name nima accessa.");
-
+        var definition = this.getDefinition(name);
+        var access = this.getAccess(definition);
        
-        if (acc.get() instanceof Global) {
-            var code = new NameExpr(((Global) acc.get()).label);
+        if (access instanceof Global) {
+            var code = new NameExpr(((Global) access).label);
             this.imcCode.store(code, name); 
-        }
-        else if (acc.get() instanceof Local) {
-            var dostop = (Local) acc.get();
 
+            var globalChunk = new Chunk.GlobalChunk((Global) access);
+            this.chunks.add(globalChunk);
+        }
+        // local or parameter
+        else {
+
+            var dostop = (Local) access;
             var offset = new ConstantExpr(dostop.offset);
 
-            // TODO nevem kako bi dubu framepointer
+            // TODO nevem kako bi dubu framepointer, Temp rabs uporabljat
             IRExpr FP = new ConstantExpr(0);
 
-            var code = new BinopExpr(FP, offset, Operator.ADD);
+            var op = Operator.SUB;
+            if (access instanceof Local) 
+                op = Operator.ADD;
+
+            var code = new BinopExpr(FP, offset, op);
 
             this.imcCode.store(code, name); 
         }
-        else if (acc.get() instanceof compiler.frm.Access.Parameter) {
-            var dostop = (compiler.frm.Access.Parameter) acc.get();
-
-            var offset = new ConstantExpr(dostop.offset);
-
-            // TODO nevem kako bi dubu framepointer Temp rabs uporabljat
-            IRExpr FP = new ConstantExpr(0);
-
-            var code = new BinopExpr(FP, offset, Operator.SUB);
-
-            this.imcCode.store(code, name); 
-        }
-        else 
-            Report.error(name.position, "Name is not global or local.?");
-        
     }
 
     @Override
@@ -280,37 +294,24 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L0);
 
         // condition
-        this.parseExpr(ifThenElse.condition);
-        var bin = imcCode.valueFor(ifThenElse.condition);
-        if (!bin.isPresent())
-            Report.error(ifThenElse.position, "While condition code not found.");
+        var condition = getIRNode(ifThenElse.condition);
 
-        var cjump = new CJumpStmt((IRExpr) bin.get(), L1.label, L2.label);
+        var cjump = new CJumpStmt((IRExpr) condition, L1.label, L2.label);
         stavki.add(cjump);
 
         // then
         stavki.add(L1);
 
-        this.parseExpr(ifThenElse.thenExpression);
-        var thenExpr = this.imcCode.valueFor(ifThenElse.thenExpression);
-
-        if (!thenExpr.isPresent())
-            Report.error(ifThenElse.position, "While body code not found.");
-
-        stavki.add(new ExpStmt((IRExpr) thenExpr.get()));
+        var thenExpr = getIRNode(ifThenElse.thenExpression);
+        stavki.add(new ExpStmt((IRExpr) thenExpr));
 
         // else
         stavki.add(L2);
 
         if (ifThenElse.elseExpression.isPresent()) {
 
-            this.parseExpr(ifThenElse.elseExpression.get());
-            var elseExpr = this.imcCode.valueFor(ifThenElse.elseExpression.get());
-
-            if (!elseExpr.isPresent())
-                Report.error(ifThenElse.position, "While body code not found.");
-
-            stavki.add(new ExpStmt((IRExpr) elseExpr.get()));
+            var elseExpr = this.getIRNode(ifThenElse.elseExpression.get());
+            stavki.add(new ExpStmt((IRExpr) elseExpr));
         }
 
         var code = new SeqStmt(stavki);
@@ -319,20 +320,18 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(Literal literal) {
-        var type = this.types.valueFor(literal);
-
-        if (!type.isPresent())
-            Report.error(literal.position, "No literal type found.");
+        var type = this.getType(literal);
         
         IRNode code;
-        if (type.get().isInt())
+        if (type.isInt())
             code = new ConstantExpr(Integer.parseInt(literal.value));
-        else if (type.get().isLog()) {
+        else if (type.isLog()) {
             if (literal.value == "true")
                 code = new ConstantExpr(1);
             else 
                 code = new ConstantExpr(0);
         }
+        else
         // else if (type.get().isStr())
             code = new ConstantExpr(0);
          
@@ -341,23 +340,15 @@ public class IRCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(Unary unary) {
-
-        var op = Operator.ADD;
-        if (unary.operator == compiler.parser.ast.expr.Unary.Operator.SUB)
-            op = Operator.SUB;
+    public void visit(Unary unary) {       
 
         var lhs = new ConstantExpr(0);
+        var rhs = getIRNode(unary.expr);
 
-        this.parseExpr(unary.expr);
-        var rhs = imcCode.valueFor(unary.expr);
+        Operator op = Operator.valueOf(unary.operator.name()); 
 
-        if (rhs.isPresent()) {
-            var code = new BinopExpr(lhs, (IRExpr) rhs.get(), op);
-            imcCode.store(code, unary);
-        }
-        else 
-            Report.error(unary.position, "Unary expression isn't present");
+        var code = new BinopExpr(lhs, (IRExpr) rhs, op);
+        imcCode.store(code, unary);
     }
 
     @Override
@@ -373,24 +364,16 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L0);
 
         // condition
-        this.parseExpr(whileLoop.condition);
-        var bin = imcCode.valueFor(whileLoop.condition);
-        if (!bin.isPresent())
-            Report.error(whileLoop.position, "While condition code not found.");
+        var condition = this.getIRNode(whileLoop.condition);
 
-        var cjump = new CJumpStmt((IRExpr) bin.get(), L1.label, L2.label);
+        var cjump = new CJumpStmt((IRExpr) condition, L1.label, L2.label);
         stavki.add(cjump);
 
         // then
         stavki.add(L1);
 
-        this.parseExpr(whileLoop.body);
-        var body = this.imcCode.valueFor(whileLoop.body);
-
-        if (!body.isPresent())
-            Report.error(whileLoop.position, "While body code not found.");
-
-        stavki.add(new ExpStmt((IRExpr) body.get()));
+        var body = this.getIRNode(whileLoop.body);
+        stavki.add(new ExpStmt((IRExpr) body));
 
         // else
         stavki.add(L2);
@@ -420,7 +403,21 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(FunDef funDef) {
-        this.parseExpr(funDef.body);
+        var body = this.getIRNode(funDef.body);
+
+        var frame = this.getFrame(funDef);
+
+        if (body instanceof IRExpr) {
+            var stmt = new ExpStmt((IRExpr) body);
+            var chunk = new Chunk.CodeChunk(frame, stmt);
+    
+            this.chunks.add(chunk);
+        }
+        else {
+            var chunk = new Chunk.CodeChunk(frame, (IRStmt) body);    
+            this.chunks.add(chunk);
+        }
+ 
     }
 
     @Override
