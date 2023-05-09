@@ -180,12 +180,12 @@ public class IRCodeGenerator implements Visitor {
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {
             
-            var move = new MoveStmt((IRExpr) lhs, Rmem);
+            var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
             imcCode.store(move, binary);  
         }
         else {            
             Operator op = Operator.valueOf(binary.operator.name());        
-            var code = new BinopExpr(Lmem, Rmem, op);
+            var code = new BinopExpr((IRExpr) lhs, (IRExpr) rhs, op);
             imcCode.store(code, binary);        
         }
     }
@@ -266,10 +266,12 @@ public class IRCodeGenerator implements Visitor {
         else {
 
             var dostop = (Local) access;
-            var offset = new ConstantExpr(dostop.offset);
+            var offset = new ConstantExpr(dostop.offset);            
 
-            // TODO nevem kako bi dubu framepointer, Temp rabs uporabljat
-            IRExpr FP = new ConstantExpr(0);
+            var frame = getFrame(definition);
+            var FP = new NameExpr(frame.label).FP();
+
+            // var FP = NameExpr.FP();            
 
             var op = Operator.SUB;
             if (access instanceof Local) 
@@ -285,13 +287,10 @@ public class IRCodeGenerator implements Visitor {
     public void visit(IfThenElse ifThenElse) {
                 
         var stavki = new ArrayList<IRStmt>();
-
-        var L0 = new LabelStmt(Label.nextAnonymous());
+        
         var L1 = new LabelStmt(Label.nextAnonymous());
         var L2 = new LabelStmt(Label.nextAnonymous());
-
-        // start
-        stavki.add(L0);
+        var L3 = new LabelStmt(Label.nextAnonymous());
 
         // condition
         var condition = getIRNode(ifThenElse.condition);
@@ -305,6 +304,9 @@ public class IRCodeGenerator implements Visitor {
         var thenExpr = getIRNode(ifThenElse.thenExpression);
         stavki.add(new ExpStmt((IRExpr) thenExpr));
 
+        var jump = new JumpStmt(L3.label);
+        stavki.add(jump);
+
         // else
         stavki.add(L2);
 
@@ -313,6 +315,8 @@ public class IRCodeGenerator implements Visitor {
             var elseExpr = this.getIRNode(ifThenElse.elseExpression.get());
             stavki.add(new ExpStmt((IRExpr) elseExpr));
         }
+
+        stavki.add(L3);
 
         var code = new SeqStmt(stavki);
         imcCode.store(code, ifThenElse);
@@ -323,20 +327,32 @@ public class IRCodeGenerator implements Visitor {
         var type = this.getType(literal);
         
         IRNode code;
-        if (type.isInt())
+        if (type.isInt()) {
             code = new ConstantExpr(Integer.parseInt(literal.value));
+            imcCode.store(code, literal);
+        }
         else if (type.isLog()) {
             if (literal.value == "true")
                 code = new ConstantExpr(1);
             else 
                 code = new ConstantExpr(0);
-        }
-        else
-        // else if (type.get().isStr())
-            code = new ConstantExpr(0);
-         
             
-        imcCode.store(code, literal);
+            imcCode.store(code, literal);
+        }
+        else if (type.isStr()) {
+            code = new ConstantExpr(0);
+
+            var def = this.getDefinition(literal);
+            var acc = this.getAccess(def);
+
+            var dataChunk = new Chunk.DataChunk((Global) acc, literal.value);
+            this.chunks.add(dataChunk);
+        }  
+        // else if (type.isArray()) {
+        //     Type.Array arr = (Type.Array) type;
+
+        //     arr.
+        // }
     }
 
     @Override
@@ -405,7 +421,7 @@ public class IRCodeGenerator implements Visitor {
     public void visit(FunDef funDef) {
         var body = this.getIRNode(funDef.body);
 
-        var frame = this.getFrame(funDef);
+        var frame = this.getFrame(funDef);        
 
         if (body instanceof IRExpr) {
             var stmt = new ExpStmt((IRExpr) body);
