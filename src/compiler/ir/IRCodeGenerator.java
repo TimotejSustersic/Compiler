@@ -159,6 +159,8 @@ public class IRCodeGenerator implements Visitor {
 
         var frame = this.getFrame(call);
         var args = new ArrayList<IRExpr>();
+           
+        args.add(new ConstantExpr(frame.staticLevel));
 
         for (Expr arg: call.arguments) {
             var argCode = this.getIRNode(arg);
@@ -182,6 +184,15 @@ public class IRCodeGenerator implements Visitor {
             
             var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
             imcCode.store(move, binary);  
+        }
+        else if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ARR) {           
+
+            // get naslov * type
+            var typeConst = new ConstantExpr(this.getType(binary.left).asArray().get().elementSizeInBytes());
+            var indexTypeMultipliyer = new BinopExpr((IRExpr) rhs, typeConst, Operator.MUL);
+
+            var code = new BinopExpr((IRExpr) lhs, indexTypeMultipliyer, Operator.ADD);
+            imcCode.store(code, binary);  
         }
         else {            
             Operator op = Operator.valueOf(binary.operator.name());        
@@ -273,6 +284,7 @@ public class IRCodeGenerator implements Visitor {
 
             // var FP = NameExpr.FP();            
 
+            // se mi ydi da je lahko vedno plus ker obstajajo negativne constante in offset ze vrne z predznakom
             var op = Operator.SUB;
             if (access instanceof Local) 
                 op = Operator.ADD;
@@ -417,12 +429,19 @@ public class IRCodeGenerator implements Visitor {
     public void visit(FunDef funDef) {
         var body = this.getIRNode(funDef.body);
 
-        var frame = this.getFrame(funDef);        
+        var frame = this.getFrame(funDef);  
+        
+        // store valu to FP
+        var FP = new NameExpr(frame.label).FP();
+        // var FP = NameExpr.FP();        
+
+        var move = new MoveStmt(FP, (IRExpr) body);
+        imcCode.store(move, funDef); 
 
         if (body instanceof IRExpr) {
-            var stmt = new ExpStmt((IRExpr) body);
-            var chunk = new Chunk.CodeChunk(frame, stmt);
-    
+            var stmt = new ExpStmt((IRExpr) body);           
+
+            var chunk = new Chunk.CodeChunk(frame, stmt);    
             this.chunks.add(chunk);
         }
         else {
