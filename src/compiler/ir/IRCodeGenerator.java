@@ -327,25 +327,20 @@ public class IRCodeGenerator implements Visitor {
         var type = this.getType(literal);
         
         IRNode code;
-        if (type.isInt()) {
+        if (type.isInt())
             code = new ConstantExpr(Integer.parseInt(literal.value));
-            imcCode.store(code, literal);
-        }
         else if (type.isLog()) {
             if (literal.value == "true")
                 code = new ConstantExpr(1);
             else 
                 code = new ConstantExpr(0);
-            
-            imcCode.store(code, literal);
         }
         else if (type.isStr()) {
-            code = new ConstantExpr(0);
+            var stringLabel = Label.nextAnonymous();
 
-            var def = this.getDefinition(literal);
-            var acc = this.getAccess(def);
+            code = new NameExpr(stringLabel);
 
-            var dataChunk = new Chunk.DataChunk((Global) acc, literal.value);
+            var dataChunk = new Chunk.DataChunk(stringLabel, literal.value);
             this.chunks.add(dataChunk);
         }  
         // else if (type.isArray()) {
@@ -353,6 +348,7 @@ public class IRCodeGenerator implements Visitor {
 
         //     arr.
         // }
+        imcCode.store(code, literal);
     }
 
     @Override
