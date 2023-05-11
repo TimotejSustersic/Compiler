@@ -158,9 +158,13 @@ public class IRCodeGenerator implements Visitor {
     public void visit(Call call) {
 
         var frame = this.getFrame(call);
-        var args = new ArrayList<IRExpr>();
-           
-        args.add(new ConstantExpr(frame.staticLevel));
+        var args = new ArrayList<IRExpr>();           
+    
+        var offset = new ConstantExpr(-4);
+        var FP = NameExpr.FP();
+        var bin = new BinopExpr(FP, offset, Operator.ADD);
+        var mem = new MemExpr(bin);
+        args.add(mem);
 
         for (Expr arg: call.arguments) {
             var argCode = this.getIRNode(arg);
@@ -177,13 +181,14 @@ public class IRCodeGenerator implements Visitor {
         var lhs = getIRNode(binary.left);
         var rhs = getIRNode(binary.right);
 
-        var Lmem = new MemExpr((IRExpr) lhs);
-        var Rmem = new MemExpr((IRExpr) rhs);
+        //var Lmem = new MemExpr((IRExpr) lhs);
+        //var Rmem = new MemExpr((IRExpr) rhs);
 
-        if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {
+        if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {            
             
             var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
-            imcCode.store(move, binary);  
+            var code = new EseqExpr(move, new MemExpr((IRExpr) lhs));
+            imcCode.store(code, binary);  
         }
         else if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ARR) {           
 
@@ -194,8 +199,8 @@ public class IRCodeGenerator implements Visitor {
             var code = new BinopExpr((IRExpr) lhs, indexTypeMultipliyer, Operator.ADD);
             imcCode.store(code, binary);  
         }
-        else {            
-            Operator op = Operator.valueOf(binary.operator.name());        
+        else {      
+            Operator op = Operator.valueOf(binary.operator.name());
             var code = new BinopExpr((IRExpr) lhs, (IRExpr) rhs, op);
             imcCode.store(code, binary);        
         }
@@ -203,10 +208,19 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(Block block) {
+
+        var statements = new ArrayList<IRStmt>();
+        IRExpr result = null;
+
         for (Expr expr: block.expressions) {
-           var code = this.getIRNode(expr);
-           imcCode.store(code, block); 
+           var expression = this.getIRNode(expr);
+           statements.add(new ExpStmt((IRExpr) expression));
+           result = (IRExpr) expression;
         }
+
+        var seqStmt = new SeqStmt(statements);
+        var code = new EseqExpr(seqStmt, result);
+        imcCode.store(code, block);
     }
 
     @Override
@@ -253,6 +267,9 @@ public class IRCodeGenerator implements Visitor {
         var counterPlusStep = new MoveStmt((IRExpr) counter, binStep);
         stavki.add(counterPlusStep);
 
+        var jump = new JumpStmt(L0.label);
+        stavki.add(jump);
+
         // out
         stavki.add(L2);
 
@@ -278,11 +295,7 @@ public class IRCodeGenerator implements Visitor {
 
             var dostop = (Local) access;
             var offset = new ConstantExpr(dostop.offset);            
-
-            var frame = getFrame(definition);
-            var FP = new NameExpr(frame.label).FP();
-
-            // var FP = NameExpr.FP();            
+            var FP = NameExpr.FP();            
 
             // se mi ydi da je lahko vedno plus ker obstajajo negativne constante in offset ze vrne z predznakom
             var op = Operator.SUB;
@@ -338,7 +351,7 @@ public class IRCodeGenerator implements Visitor {
     public void visit(Literal literal) {
         var type = this.getType(literal);
         
-        IRNode code;
+        IRNode code = null;
         if (type.isInt())
             code = new ConstantExpr(Integer.parseInt(literal.value));
         else if (type.isLog()) {
@@ -349,10 +362,11 @@ public class IRCodeGenerator implements Visitor {
         }
         else if (type.isStr()) {
             var stringLabel = Label.nextAnonymous();
+            var access = new Access.Global(4, stringLabel);
 
             code = new NameExpr(stringLabel);
 
-            var dataChunk = new Chunk.DataChunk(stringLabel, literal.value);
+            var dataChunk = new Chunk.DataChunk(access, literal.value);
             this.chunks.add(dataChunk);
         }  
         // else if (type.isArray()) {
@@ -399,6 +413,9 @@ public class IRCodeGenerator implements Visitor {
         var body = this.getIRNode(whileLoop.body);
         stavki.add(new ExpStmt((IRExpr) body));
 
+        var jump = new JumpStmt(L0.label);
+        stavki.add(jump);
+
         // else
         stavki.add(L2);
 
@@ -410,7 +427,9 @@ public class IRCodeGenerator implements Visitor {
     public void visit(Where where) {
 
         this.visit(where.defs);
-        this.parseExpr(where.expr);
+
+        var body = this.getIRNode(where.expr);
+        imcCode.store((IRExpr) body, where);
     }
 
     @Override
@@ -427,28 +446,15 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(FunDef funDef) {
-        var body = this.getIRNode(funDef.body);
 
-        var frame = this.getFrame(funDef);  
-        
-        // store valu to FP
-        var FP = new NameExpr(frame.label).FP();
-        // var FP = NameExpr.FP();        
+        var body = new ExpStmt((IRExpr) this.getIRNode(funDef.body));
+        var frame = this.getFrame(funDef);
 
-        var move = new MoveStmt(FP, (IRExpr) body);
-        imcCode.store(move, funDef); 
+        // more shrant vrednost
+        var FP = NameExpr.FP();
 
-        if (body instanceof IRExpr) {
-            var stmt = new ExpStmt((IRExpr) body);           
-
-            var chunk = new Chunk.CodeChunk(frame, stmt);    
-            this.chunks.add(chunk);
-        }
-        else {
-            var chunk = new Chunk.CodeChunk(frame, (IRStmt) body);    
-            this.chunks.add(chunk);
-        }
- 
+        var chunk = new Chunk.CodeChunk(frame, body);    
+        this.chunks.add(chunk);
     }
 
     @Override
