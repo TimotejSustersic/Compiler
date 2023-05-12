@@ -273,7 +273,8 @@ public class IRCodeGenerator implements Visitor {
         // out
         stavki.add(L2);
 
-        var code = new SeqStmt(stavki);
+        var seq = new SeqStmt(stavki);
+        var code = new EseqExpr(seq, new ConstantExpr(0));
         imcCode.store(code, forLoop);
     }
 
@@ -290,19 +291,23 @@ public class IRCodeGenerator implements Visitor {
             var globalChunk = new Chunk.GlobalChunk((Global) access);
             this.chunks.add(globalChunk);
         }
-        // local or parameter
-        else {
+        // local
+        else if (access instanceof Local){
 
             var dostop = (Local) access;
             var offset = new ConstantExpr(dostop.offset);            
-            var FP = NameExpr.FP();            
+            var FP = NameExpr.FP();           
 
-            // se mi ydi da je lahko vedno plus ker obstajajo negativne constante in offset ze vrne z predznakom
-            var op = Operator.SUB;
-            if (access instanceof Local) 
-                op = Operator.ADD;
+            var code = new BinopExpr(FP, offset, Operator.ADD);
 
-            var code = new BinopExpr(FP, offset, op);
+            this.imcCode.store(code, name); 
+        }
+        else {
+            var dostop = (compiler.frm.Access.Parameter) access;
+            var offset = new ConstantExpr(dostop.offset);            
+            var FP = NameExpr.FP();           
+
+            var code = new BinopExpr(FP, offset, Operator.ADD);
 
             this.imcCode.store(code, name); 
         }
@@ -343,7 +348,8 @@ public class IRCodeGenerator implements Visitor {
 
         stavki.add(L3);
 
-        var code = new SeqStmt(stavki);
+        var seq = new SeqStmt(stavki);
+        var code = new EseqExpr(seq, new ConstantExpr(0));
         imcCode.store(code, ifThenElse);
     }
 
@@ -419,7 +425,8 @@ public class IRCodeGenerator implements Visitor {
         // else
         stavki.add(L2);
 
-        var code = new SeqStmt(stavki);
+        var seq = new SeqStmt(stavki);
+        var code = new EseqExpr(seq, new ConstantExpr(0));
         imcCode.store(code, whileLoop);
     }
 
@@ -461,7 +468,7 @@ public class IRCodeGenerator implements Visitor {
     public void visit(TypeDef typeDef) {
         // /
     }
-
+ 
     @Override
     public void visit(VarDef varDef) {
         // /
