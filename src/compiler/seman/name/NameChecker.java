@@ -7,8 +7,11 @@ package compiler.seman.name;
 
 import static common.RequireNonNull.requireNonNull;
 
+import java.util.ArrayList;
+
 import common.Report;
 import compiler.common.Visitor;
+import compiler.lexer.Position;
 import compiler.parser.ast.def.*;
 import compiler.parser.ast.def.FunDef.Parameter;
 import compiler.parser.ast.expr.*;
@@ -38,6 +41,30 @@ public class NameChecker implements Visitor {
         requireNonNull(definitions, symbolTable);
         this.definitions = definitions;
         this.symbolTable = symbolTable;
+
+        var defLocation = new Position(0, 0, 0, 0);
+        var params = new ArrayList<Parameter>();
+
+        params.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+
+        var printInt = new FunDef(defLocation, "printInt", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var seed = new FunDef(defLocation, "seed", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printStr = new FunDef(defLocation, "printStr", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printLog = new FunDef(defLocation, "printLog", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+
+        params.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        var rand = new FunDef(defLocation, "rand", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+
+        try {
+            this.symbolTable.insert(printInt);
+            this.symbolTable.insert(printStr);
+            this.symbolTable.insert(printLog);
+            this.symbolTable.insert(seed);
+            this.symbolTable.insert(rand);
+        } catch (DefinitionAlreadyExistsException e) {
+            Report.error("Librariy issues");
+        }
+        
     }
 
     private void nameType(Type type) {

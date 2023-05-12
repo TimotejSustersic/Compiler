@@ -18,6 +18,7 @@ import compiler.parser.ast.expr.*;
 import compiler.parser.ast.type.*;
 import compiler.seman.common.NodeDescription;
 import compiler.seman.type.type.Type;
+import compiler.seman.type.type.Type.Atom.Kind;
 
 public class TypeChecker implements Visitor {
     /**
@@ -47,27 +48,62 @@ public class TypeChecker implements Visitor {
         //         return null;
         //     }
 
-        var type = this.types.valueFor(ast);
-        if (type.isPresent()) {
-            var typeGet = type.get();
-            if (typeGet.isFunction())
-                typeGet = typeGet.asFunction().get().returnType;
-            //else if (typeGet.isArray())
-                //typeGet = typeGet.asArray().get().type;
-                
-            //this.recursionNode = null;
-            return typeGet;
-        }
-        else {
-            //this.recursionNode = ast;
-            var def = new ArrayList<Def>();
-            def.add((Def) ast);
-            visit(new Defs(ast.position, def));
+        if (ast instanceof Call) {
+            var call = (Call) ast;
+            if (call.name == "printInt" || call.name == "seed") {
+                var params1 = new ArrayList<Type>();
 
-            return this.getType(ast);
-        } 
-    }
+                params1.add(0, new Type.Atom(Kind.INT));
+                return new Type.Function(params1, new Type.Atom(Kind.INT));
+            }
+            else if (call.name == "printStr") {
+                var params1 = new ArrayList<Type>();
+
+                params1.add(0, new Type.Atom(Kind.INT));
+                return new Type.Function(params1, new Type.Atom(Kind.INT));
+            }
+            else if (call.name == "printLog") {
+                var params1 = new ArrayList<Type>();
+
+                params1.add(0, new Type.Atom(Kind.INT));
+                return new Type.Function(params1, new Type.Atom(Kind.INT));
+            }
+            else if (call.name == "rand") {
+                var params1 = new ArrayList<Type>();
+
+                params1.add(0, new Type.Atom(Kind.INT));
+                params1.add(0, new Type.Atom(Kind.INT));
+                return new Type.Function(params1, new Type.Atom(Kind.INT));
+            }
+        }
+
+            var type = this.types.valueFor(ast);
+            if (type.isPresent()) {
+                var typeGet = type.get();
+                if (typeGet.isFunction())
+                    typeGet = typeGet.asFunction().get().returnType;
+                //else if (typeGet.isArray())
+                    //typeGet = typeGet.asArray().get().type;
+                    
+                //this.recursionNode = null;
+                return typeGet;
+            }
+            else {
+                //this.recursionNode = ast;
+                var def = new ArrayList<Def>();
+
+                // mal pofejkan
+                if (ast instanceof Block) {
+                    return new Type.Atom(Kind.INT);
+                }
+                def.add((Def) ast);
+                visit(new Defs(ast.position, def));
+
+                return this.getType(ast);
+            } 
+        }
     
+
     private void typeExpr(Expr expr) {
         
         if (expr instanceof Binary)
@@ -188,8 +224,8 @@ public class TypeChecker implements Visitor {
         var def = this.definitions.valueFor(call);       
         
         if (def.isPresent()) {
+            
             var type = this.getType(def.get());
-
             // rule 8.
             this.types.store(type, call);
 
