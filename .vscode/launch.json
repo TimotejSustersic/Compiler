@@ -11,6 +11,7 @@
             "mainClass": "Main",
             "projectName": "PINSCompiler_8907c570",
             "args": "PINS code.txt --dump IMC --exec IMC"
+            
         },
         {
             "type": "java",
@@ -18,7 +19,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "PINSCompiler_70071860",
-            "args": "PINS code.txt --dump IMC --exec IMC"
+            "args": "PINS code.txt --dump INT"
         }
     ]
 }
