@@ -199,8 +199,8 @@ public abstract class Type {
         }
 
         @Override
-        public boolean equals(Type t) {
-            return (this.isArray() && t.isArray() && this.type == t.asArray().get().type);
+        public boolean equals(Type t) { 
+            return (this.isArray() && t.isArray() && this.type.equals(t.asArray().get().type));
         }
 
         @Override
@@ -242,7 +242,7 @@ public abstract class Type {
 
         @Override
         public boolean equals(Type t) {
-            return (this.isFunction() && t.isFunction() && this.returnType == t.asFunction().get().returnType); 
+            return (this.isFunction() && t.isFunction() && this.returnType.equals(t.asFunction().get().returnType)); 
         }
 
         @Override

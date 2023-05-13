@@ -59,14 +59,14 @@ public class TypeChecker implements Visitor {
             else if (call.name == "printStr") {
                 var params1 = new ArrayList<Type>();
 
-                params1.add(0, new Type.Atom(Kind.INT));
-                return new Type.Function(params1, new Type.Atom(Kind.INT));
+                params1.add(0, new Type.Atom(Kind.STR));
+                return new Type.Function(params1, new Type.Atom(Kind.STR));
             }
             else if (call.name == "printLog") {
                 var params1 = new ArrayList<Type>();
 
-                params1.add(0, new Type.Atom(Kind.INT));
-                return new Type.Function(params1, new Type.Atom(Kind.INT));
+                params1.add(0, new Type.Atom(Kind.LOG));
+                return new Type.Function(params1, new Type.Atom(Kind.LOG));
             }
             else if (call.name == "rand") {
                 var params1 = new ArrayList<Type>();
@@ -92,10 +92,10 @@ public class TypeChecker implements Visitor {
                 //this.recursionNode = ast;
                 var def = new ArrayList<Def>();
 
-                // mal pofejkan
                 if (ast instanceof Block) {
                     return new Type.Atom(Kind.INT);
                 }
+
                 def.add((Def) ast);
                 visit(new Defs(ast.position, def));
 
@@ -144,10 +144,7 @@ public class TypeChecker implements Visitor {
     public void visit(Defs defs) {
 
         for (Def def: defs.definitions) {
-            //if (def instanceof TypeDef) 
-                //this.visit((TypeDef) def);                     
-            //else if (def instanceof VarDef) 
-                //this.visit((VarDef) def);
+            
             if (def instanceof FunDef) {
 
                 var listParams = new ArrayList<Type>();
@@ -159,7 +156,9 @@ public class TypeChecker implements Visitor {
         
                 this.typeType(((FunDef) def).type);
 
-                Type funType = new Type.Function(listParams, this.getType(((FunDef) def).type));
+                var returnType = this.getType(((FunDef) def).type);                
+
+                Type funType = new Type.Function(listParams, returnType);
                 
                 this.types.store(funType, ((FunDef) def));
             }
@@ -186,21 +185,14 @@ public class TypeChecker implements Visitor {
         var funType = this.getType(funDef.type);
         var bodyType = this.getType(funDef.body);
 
-        if (!(funType.equals(bodyType)))
-            Report.error(funDef.position, "Fun.body and fun.type isn't equal.");
+        if (!(funDef.name == "printInt" || funDef.name == "seed" || funDef.name == "rand"|| funDef.name == "printLog"|| funDef.name == "printStr"))
+            if (!(funType.equals(bodyType)))
+                Report.error(funDef.position, "Fun.body and fun.type isn't equal.");
     }
 
     @Override
     public void visit(TypeDef typeDef) {
         this.typeType(typeDef.type);
-
-        // if (this.recursionNode != null) {
-        //     System.out.println(recursionNode.toString());
-        //     Report.error(typeDef.position, "Recursion.");
-        //     if (this.recursionNode == typeDef.type) {
-        //         Report.error(typeDef.position, "Recursion in finding type.");
-        //     }
-        // }
 
         this.types.store(this.getType(typeDef.type), typeDef);
     }
@@ -224,13 +216,23 @@ public class TypeChecker implements Visitor {
         var def = this.definitions.valueFor(call);       
         
         if (def.isPresent()) {
-            
+
+            var funDef = (FunDef) def.get();
             var type = this.getType(def.get());
             // rule 8.
             this.types.store(type, call);
 
-            for (var expr: call.arguments)
+            for (var i = 0; i < call.arguments.size(); i++) {
+                var expr = call.arguments.get(i);
+                var param = funDef.parameters.get(i);
+
                 this.typeExpr(expr);
+                var argType = this.getType(expr);
+                var paramType = this.getType(param);
+                
+                if (!argType.equals(paramType))                     
+                    Report.error(expr.position, "Argument type doesn't equal the parameter type");                
+            }
         }
         else
             Report.error(call.position, "Call Definition doesn't exist.");

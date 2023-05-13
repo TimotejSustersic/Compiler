@@ -45,12 +45,15 @@ public class NameChecker implements Visitor {
         var defLocation = new Position(0, 0, 0, 0);
         var params = new ArrayList<Parameter>();
 
-        params.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        params.add(0, new Parameter(defLocation, "int", Atom.INT(defLocation)));
 
         var printInt = new FunDef(defLocation, "printInt", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
         var seed = new FunDef(defLocation, "seed", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var printStr = new FunDef(defLocation, "printStr", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var printLog = new FunDef(defLocation, "printLog", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+
+        params.add(0, new Parameter(defLocation, "int", Atom.STR(defLocation)));
+        var printStr = new FunDef(defLocation, "printStr", params, Atom.STR(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        params.add(0, new Parameter(defLocation, "int", Atom.LOG(defLocation)));
+        var printLog = new FunDef(defLocation, "printLog", params, Atom.LOG(defLocation), new Block(defLocation, new ArrayList<Expr>()));
 
         params.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
         var rand = new FunDef(defLocation, "rand", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
