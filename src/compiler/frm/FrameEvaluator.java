@@ -48,7 +48,7 @@ public class FrameEvaluator implements Visitor {
     /**
      * Opis vozlišč in njihovih definicij.
      */
-    private final NodeDescription<Def> definitions;
+    //private final NodeDescription<Def> definitions;
 
     /**
      * Opis vozlišč in njihovih podatkovnih tipov.
@@ -64,7 +64,7 @@ public class FrameEvaluator implements Visitor {
         requireNonNull(frames, accesses, definitions, types);
         this.frames = frames;
         this.accesses = accesses;
-        this.definitions = definitions;
+        //this.definitions = definitions;
         this.types = types;
     }
 

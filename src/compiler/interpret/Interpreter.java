@@ -19,6 +19,7 @@ import compiler.gen.Memory;
 import compiler.ir.chunk.Chunk.CodeChunk;
 import compiler.ir.code.IRNode;
 import compiler.ir.code.expr.*;
+import compiler.ir.code.expr.BinopExpr.Operator;
 import compiler.ir.code.stmt.*;
 import compiler.ir.IRPrettyPrint;
 
@@ -107,19 +108,34 @@ public class Interpreter {
     }
 
     private Object execute(CJumpStmt cjump) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        if (toBool(execute(cjump.condition)))
+            return execute(new JumpStmt(cjump.thenLabel));
+        else 
+            return execute(new JumpStmt(cjump.elseLabel));
     }
 
     private Object execute(ExpStmt exp) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        return execute(exp.expr);
     }
 
     private Object execute(JumpStmt jump) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        
+
+        return null;
     }
 
     private Object execute(MoveStmt move) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+
+        var dest = execute(move.dst);
+        var source = execute(move.src);
+
+        try {
+            this.memory.stM(toInt(dest), source);
+        } catch (IllegalArgumentException e) {
+            this.memory.stM((Frame.Label) dest, source);
+        }
+
+        return null;
     }
 
     private Object execute(IRExpr expr) {
@@ -143,7 +159,38 @@ public class Interpreter {
     }
 
     private Object execute(BinopExpr binop) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+
+        var left = execute(binop.lhs);
+        var right = execute(binop.rhs);
+        
+        if (binop.op == Operator.ADD) 
+            return toInt(left) + toInt(right);
+        else if (binop.op == Operator.SUB) 
+            return toInt(left) - toInt(right);
+        else if (binop.op == Operator.MUL) 
+            return toInt(left) * toInt(right);
+        else if (binop.op == Operator.DIV) 
+            return toInt(left) / toInt(right);
+        else if (binop.op == Operator.MOD) 
+            return toInt(left) % toInt(right);
+        else if (binop.op == Operator.EQ) 
+            return toInt(left) == toInt(right);
+        else if (binop.op == Operator.NEQ) 
+            return toInt(left) != toInt(right);
+        else if (binop.op == Operator.LT) 
+            return toInt(left) < toInt(right);
+        else if (binop.op == Operator.LEQ) 
+            return toInt(left) <= toInt(right);
+        else if (binop.op == Operator.GT) 
+            return toInt(left) > toInt(right);
+        else if (binop.op == Operator.GEQ) 
+            return toInt(left) >= toInt(right);
+        else if (binop.op == Operator.AND) 
+            return toBool(left) && toBool(right);
+        else if (binop.op == Operator.OR) 
+            return toBool(left) || toBool(right);       
+
+        return null;
     }
 
     private Object execute(CallExpr call) {
@@ -174,26 +221,32 @@ public class Interpreter {
             random = new Random(seed);
             return 0;
         } else if (memory.ldM(call.label) instanceof CodeChunk chunk) {
-            throw new UnsupportedOperationException("Unimplemented method 'execute'");
+            throw new UnsupportedOperationException("Unimplemented method 'execute6'");
         } else {
             throw new RuntimeException("Only functions can be called!");
         }
     }
 
     private Object execute(ConstantExpr constant) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        return constant.constant;
     }
 
     private Object execute(MemExpr mem) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        var naslov = execute(mem.expr);
+
+        try {
+            return this.memory.ldM(toInt(naslov));
+        } catch (IllegalArgumentException e) {
+            return this.memory.ldM((Frame.Label) naslov);
+        }
     }
 
     private Object execute(NameExpr name) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        return name.label;
     }
 
     private Object execute(TempExpr temp) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute'");
+        throw new UnsupportedOperationException("Unimplemented method 'execute10'");
     }
 
     // ----------- pomožne funkcije -----------

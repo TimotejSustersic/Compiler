@@ -458,7 +458,7 @@ public class IRCodeGenerator implements Visitor {
         var frame = this.getFrame(funDef);
 
         // more shrant vrednost
-        var FP = NameExpr.FP();
+        //var FP = NameExpr.FP();
 
         var chunk = new Chunk.CodeChunk(frame, body);    
         this.chunks.add(chunk);
@@ -491,7 +491,6 @@ public class IRCodeGenerator implements Visitor {
 
     @Override
     public void visit(TypeName name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visit'");
+        // /
     }
 }
