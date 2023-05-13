@@ -230,8 +230,23 @@ public class TypeChecker implements Visitor {
                 var argType = this.getType(expr);
                 var paramType = this.getType(param);
                 
-                if (!argType.equals(paramType))                     
-                    Report.error(expr.position, "Argument type doesn't equal the parameter type");                
+                if (!argType.equals(paramType))  {  
+                    
+                    System.out.println("Int");
+                    System.out.println(argType.isInt());
+                    System.out.println(paramType.isInt());
+                    System.out.println("Str");
+                    System.out.println(argType.isStr());
+                    System.out.println(paramType.isStr());
+                    System.out.println("Log");
+                    System.out.println(argType.isLog());
+                    System.out.println(paramType.isLog());
+                    System.out.println("Arr");
+                    System.out.println(argType.isArray());
+                    System.out.println(paramType.isArray());
+
+                    Report.error(expr.position, "Argument type doesn't equal the parameter type");     
+                }           
             }
         }
         else

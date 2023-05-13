@@ -162,6 +162,20 @@ public class Interpreter {
 
         var left = execute(binop.lhs);
         var right = execute(binop.rhs);
+
+        //FP
+        try {
+            toInt(left);
+        } catch (IllegalArgumentException e) {
+            left = this.framePointer;
+        }        
+        
+        // FP
+        try {
+            toInt(right);
+        } catch (IllegalArgumentException e) {
+            right = this.framePointer;
+        }
         
         if (binop.op == Operator.ADD) 
             return toInt(left) + toInt(right);
@@ -237,6 +251,7 @@ public class Interpreter {
         try {
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
+            System.out.println(naslov.toString());
             return this.memory.ldM((Frame.Label) naslov);
         }
     }

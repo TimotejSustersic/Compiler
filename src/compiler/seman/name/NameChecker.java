@@ -43,20 +43,22 @@ public class NameChecker implements Visitor {
         this.symbolTable = symbolTable;
 
         var defLocation = new Position(0, 0, 0, 0);
-        var params = new ArrayList<Parameter>();
+        var paramsInt = new ArrayList<Parameter>();
+        var paramsInt2 = new ArrayList<Parameter>();
+        var paramsStr = new ArrayList<Parameter>();
+        var paramsLog = new ArrayList<Parameter>();
 
-        params.add(0, new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        paramsInt.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        paramsInt2.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        paramsInt2.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
+        paramsStr.add(new Parameter(defLocation, "int", Atom.STR(defLocation)));
+        paramsLog.add(new Parameter(defLocation, "int", Atom.LOG(defLocation)));
 
-        var printInt = new FunDef(defLocation, "printInt", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var seed = new FunDef(defLocation, "seed", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-
-        params.add(0, new Parameter(defLocation, "int", Atom.STR(defLocation)));
-        var printStr = new FunDef(defLocation, "printStr", params, Atom.STR(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        params.add(0, new Parameter(defLocation, "int", Atom.LOG(defLocation)));
-        var printLog = new FunDef(defLocation, "printLog", params, Atom.LOG(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-
-        params.add(new Parameter(defLocation, "int", Atom.INT(defLocation)));
-        var rand = new FunDef(defLocation, "rand", params, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printInt = new FunDef(defLocation, "printInt", paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var seed = new FunDef(defLocation, "seed", paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printStr = new FunDef(defLocation, "printStr", paramsStr, Atom.STR(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printLog = new FunDef(defLocation, "printLog", paramsLog, Atom.LOG(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var rand = new FunDef(defLocation, "rand", paramsInt2, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
 
         try {
             this.symbolTable.insert(printInt);
