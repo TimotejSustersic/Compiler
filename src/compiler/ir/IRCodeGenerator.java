@@ -10,6 +10,7 @@ import static common.RequireNonNull.requireNonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import common.Constants;
 import common.Report;
 import compiler.common.Visitor;
 import compiler.frm.Access;
@@ -171,7 +172,11 @@ public class IRCodeGenerator implements Visitor {
             args.add((IRExpr) argCode);
         }
 
-        var code = new CallExpr(frame.label, args);
+        var label = frame.label;
+        if (call.name.equals(Constants.printIntLabel) || call.name.equals(Constants.printLogLabel) || call.name.equals(Constants.printStringLabel) || call.name.equals(Constants.randIntLabel) || call.name.equals(Constants.seedLabel))
+        label = Label.named(call.name);
+
+        var code = new CallExpr(label, args);
         imcCode.store(code, call);
     }
 
@@ -181,13 +186,13 @@ public class IRCodeGenerator implements Visitor {
         var lhs = getIRNode(binary.left);
         var rhs = getIRNode(binary.right);
 
-        //var Lmem = new MemExpr((IRExpr) lhs);
-        //var Rmem = new MemExpr((IRExpr) rhs);
+        var Lmem = new MemExpr((IRExpr) lhs);
+        var Rmem = new MemExpr((IRExpr) rhs);
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {            
             
-            var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
-            var code = new EseqExpr(move, new MemExpr((IRExpr) lhs));
+            var move = new MoveStmt(Rmem, (IRExpr) rhs);
+            var code = new EseqExpr(move, Lmem);
             imcCode.store(code, binary);  
         }
         else if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ARR) {           

@@ -51,25 +51,25 @@ public class TypeChecker implements Visitor {
 
         if (ast instanceof Call) {
             var call = (Call) ast;
-            if (call.name == Constants.printIntLabel || call.name == Constants.seedLabel) {
+            if (call.name.equals(Constants.printIntLabel) || call.name.equals(Constants.seedLabel)) {
                 var params1 = new ArrayList<Type>();
 
                 params1.add(0, new Type.Atom(Kind.INT));
                 return new Type.Function(params1, new Type.Atom(Kind.INT));
             }
-            else if (call.name == Constants.printStringLabel) {
+            else if (call.name.equals(Constants.printStringLabel)) {
                 var params1 = new ArrayList<Type>();
 
                 params1.add(0, new Type.Atom(Kind.STR));
                 return new Type.Function(params1, new Type.Atom(Kind.STR));
             }
-            else if (call.name == Constants.printLogLabel) {
+            else if (call.name.equals(Constants.printLogLabel)) {
                 var params1 = new ArrayList<Type>();
 
                 params1.add(0, new Type.Atom(Kind.LOG));
                 return new Type.Function(params1, new Type.Atom(Kind.LOG));
             }
-            else if (call.name == Constants.randIntLabel) {
+            else if (call.name.equals(Constants.randIntLabel)) {
                 var params1 = new ArrayList<Type>();
 
                 params1.add(0, new Type.Atom(Kind.INT));
@@ -186,7 +186,7 @@ public class TypeChecker implements Visitor {
         var funType = this.getType(funDef.type);
         var bodyType = this.getType(funDef.body);
 
-        if (!(funDef.name == Constants.printIntLabel || funDef.name == Constants.seedLabel || funDef.name == Constants.randIntLabel || funDef.name == Constants.printLogLabel || funDef.name == Constants.printStringLabel))
+        if (!(funDef.name.equals(Constants.printIntLabel) || funDef.name.equals(Constants.seedLabel) || funDef.name.equals(Constants.randIntLabel) || funDef.name.equals(Constants.printLogLabel) || funDef.name.equals(Constants.printStringLabel)))
             if (!(funType.equals(bodyType)))
                 Report.error(funDef.position, "Fun.body and fun.type isn't equal.");
     }
