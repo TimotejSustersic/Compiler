@@ -188,11 +188,13 @@ public class IRCodeGenerator implements Visitor {
         var rhs = getIRNode(binary.right);
 
         var Lmem = new MemExpr((IRExpr) lhs);
-        var Rmem = new MemExpr((IRExpr) rhs);
+        //var Rmem = new MemExpr((IRExpr) rhs);
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {            
             
-            var move = new MoveStmt(Rmem, (IRExpr) rhs);
+            // brez mem
+            var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
+            // result je mem od vrednosti kamor si glih kar nalozu vrednost
             var code = new EseqExpr(move, Lmem);
             imcCode.store(code, binary);  
         }
@@ -253,10 +255,10 @@ public class IRCodeGenerator implements Visitor {
 
         // assign i = 0
         var move = new MoveStmt(CounterMem, LowMem);
-        stavki.add(move);
+        stavki.add(0, move);
 
         // start
-        stavki.add(L0);
+        stavki.add(1, L0);
 
         // condition        
 
@@ -373,7 +375,7 @@ public class IRCodeGenerator implements Visitor {
         if (type.isInt())
             code = new ConstantExpr(Integer.parseInt(literal.value));
         else if (type.isLog()) {
-            if (literal.value == "true")
+            if (literal.value.equals("true"))
                 code = new ConstantExpr(1);
             else 
                 code = new ConstantExpr(0);

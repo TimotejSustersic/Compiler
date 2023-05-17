@@ -130,8 +130,8 @@ public class Interpreter {
 
     private Object execute(MoveStmt move, Map<Frame.Temp, Object> temps) {
 
-        System.out.println("move");
-        prettyPrint(move);
+        //System.out.println("move");
+        //prettyPrint(move);
 
         // desni del
         var source = execute(move.src, temps);
@@ -147,8 +147,8 @@ public class Interpreter {
             dest = execute(move.dst, temps);
         }
 
-        System.out.println("naslov: " + dest);
-        System.out.println("vrednost: " + source);
+        //System.out.println("naslov: " + dest);
+        //System.out.println("vrednost: " + source);
 
         if (dest instanceof Frame.Temp) 
             this.memory.stT((Frame.Temp) dest, source);          
@@ -163,7 +163,8 @@ public class Interpreter {
             }            
         }
 
-        System.out.println("moveend");
+        //System.out.println("moveend");
+        //System.out.println("-------------------------------");
         return null; 
     }
 
@@ -192,8 +193,7 @@ public class Interpreter {
         var left = execute(binop.lhs, temps);
         var right = execute(binop.rhs, temps);
 
-        Integer output = null;
-
+        //Integer output = null;
         //FP
         try {
             toInt(left);
@@ -209,7 +209,7 @@ public class Interpreter {
         }
         
         if (binop.op == Operator.ADD) 
-        output = toInt(left) + toInt(right);
+            return toInt(left) + toInt(right);
         else if (binop.op == Operator.SUB) 
             return toInt(left) - toInt(right);
         else if (binop.op == Operator.MUL) 
@@ -235,26 +235,54 @@ public class Interpreter {
         else if (binop.op == Operator.OR) 
             return toBool(left) || toBool(right);       
 
-        System.out.println("binary: left: " + left + " right: " + right + " result: " + output);
-        return output;
+            // dej mem skini povsod razn v klicu funkcije pa name al nameexpr ne vem
+        //System.out.println("binary: left: " + left + " right: " + right + " result: " + output);
+        //return output;
+        return null;
     }
 
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
-            outputStream.ifPresent(stream -> stream.println(arg));
+
+            try {
+            var output = this.memory.ldT((Temp) arg);
+            outputStream.ifPresent(stream -> stream.println(output));
+            }
+            catch (IllegalArgumentException e) {
+                System.out.println(e.toString());
+            }
+            
             return null;
         } else if (call.label.name.equals(Constants.printStringLabel)) {
-            if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
+            if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }           
             var address = execute(call.args.get(1), temps);
-            var res = memory.ldM(toInt(address));
-            outputStream.ifPresent(stream -> stream.println("\""+res+"\""));
+            //var res = memory.ldM(toInt(address));
+            try {
+                var output = this.memory.ldT((Temp) address);
+                outputStream.ifPresent(stream -> stream.println("\""+output+"\""));
+            }
+            catch (IllegalArgumentException e) {
+                System.out.println(e.toString());
+            }
+
             return null;
         } else if (call.label.name.equals(Constants.printLogLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
-            outputStream.ifPresent(stream -> stream.println(toBool(arg)));
+            // mal pofejkan
+            try {
+                var output = this.memory.ldT((Temp) arg);
+                if ((Integer) output == 1)
+                outputStream.ifPresent(stream -> stream.println("true"));
+                else
+                outputStream.ifPresent(stream -> stream.println("false"));
+            }
+            catch (IllegalArgumentException e) {
+                    System.out.println(e.toString());
+            }
+
             return null;
         } else if (call.label.name.equals(Constants.randIntLabel)) {
             if (call.args.size() != 3) { throw new RuntimeException("Invalid argument count!"); }
@@ -271,7 +299,7 @@ public class Interpreter {
             // internalInterpret(chunk, new HashMap<>())
             //                          ~~~~~~~~~~~~~ 'lokalni registri'
             // ... 
-            throw new UnsupportedOperationException("Unimplemented method 'execute6'");
+            return execute((IRStmt) chunk.code, temps);
         } else {
             throw new RuntimeException("Only functions can be called!");
         }
@@ -286,21 +314,21 @@ public class Interpreter {
         var naslov = execute(mem.expr, temps);
 
         if (mem.expr instanceof ConstantExpr) 
-            return naslov;        
+            return naslov;
 
         if (naslov instanceof Frame.Temp) 
-            this.memory.ldT((Frame.Temp) naslov);    
+            return this.memory.ldT((Frame.Temp) naslov);    
         else if (naslov instanceof Frame.Label)
-            this.memory.ldM((Frame.Label) naslov);
+            return this.memory.ldM((Frame.Label) naslov);
         else {
             try {
                 return this.memory.ldM(toInt(naslov));
             } catch (IllegalArgumentException e) {
-                System.out.println("mem error");
+                //System.out.println("mem error");
                 System.out.println(e.toString());
 
                 prettyPrint(mem);
-                System.out.println("memend");
+                //System.out.println("memend");
             }
         }
         return 0; 
