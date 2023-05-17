@@ -12,12 +12,12 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.Random;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map; 
 
 import common.Constants;
 import compiler.frm.Frame;
+import compiler.frm.Frame.Temp;
 import compiler.gen.Memory;
 import compiler.ir.chunk.Chunk.CodeChunk;
 import compiler.ir.code.IRNode;
@@ -112,6 +112,7 @@ public class Interpreter {
     }
 
     private Object execute(CJumpStmt cjump, Map<Frame.Temp, Object> temps) {
+
         if (toBool(execute(cjump.condition, temps)))
             return cjump.thenLabel;
         else 
@@ -129,22 +130,41 @@ public class Interpreter {
 
     private Object execute(MoveStmt move, Map<Frame.Temp, Object> temps) {
 
-        var dest = execute(move.dst, temps);
+        System.out.println("move");
+        prettyPrint(move);
+
+        // desni del
         var source = execute(move.src, temps);
+        Object dest;   
+        
+
+        // levi more bit brez tempa
+        if ((move.dst instanceof MemExpr))  {
+            var memDest = (MemExpr) move.dst;
+            dest = execute(memDest.expr, temps); 
+        }
+        else {
+            dest = execute(move.dst, temps);
+        }
+
+        System.out.println("naslov: " + dest);
+        System.out.println("vrednost: " + source);
 
         if (dest instanceof Frame.Temp) 
-            this.memory.stT((Frame.Temp) dest, source);        
+            this.memory.stT((Frame.Temp) dest, source);          
         else if (dest instanceof Frame.Label)
             this.memory.stM((Frame.Label) dest, source);
-        else {
-            try {
+        else {            
+            try {                
                 this.memory.stM(toInt(dest), source);
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.toString());            
-                System.out.println(dest.getClass().toString());            
-            }
+            } catch (IllegalArgumentException e) {  
+                System.out.println(e.toString());
+                System.out.println(dest.getClass().getSimpleName());
+            }            
         }
-        return 0; 
+
+        System.out.println("moveend");
+        return null; 
     }
 
     private Object execute(IRExpr expr, Map<Frame.Temp, Object> temps) {
@@ -172,6 +192,8 @@ public class Interpreter {
         var left = execute(binop.lhs, temps);
         var right = execute(binop.rhs, temps);
 
+        Integer output = null;
+
         //FP
         try {
             toInt(left);
@@ -187,7 +209,7 @@ public class Interpreter {
         }
         
         if (binop.op == Operator.ADD) 
-            return toInt(left) + toInt(right);
+        output = toInt(left) + toInt(right);
         else if (binop.op == Operator.SUB) 
             return toInt(left) - toInt(right);
         else if (binop.op == Operator.MUL) 
@@ -213,7 +235,8 @@ public class Interpreter {
         else if (binop.op == Operator.OR) 
             return toBool(left) || toBool(right);       
 
-        return null;
+        System.out.println("binary: left: " + left + " right: " + right + " result: " + output);
+        return output;
     }
 
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
@@ -259,28 +282,36 @@ public class Interpreter {
     }
 
     private Object execute(MemExpr mem, Map<Frame.Temp, Object> temps) {
+
         var naslov = execute(mem.expr, temps);
 
-        try {
-            return this.memory.ldM(toInt(naslov));
-        } catch (IllegalArgumentException e) {
-            return this.memory.ldM((Frame.Label) naslov);
+        if (mem.expr instanceof ConstantExpr) 
+            return naslov;        
+
+        if (naslov instanceof Frame.Temp) 
+            this.memory.ldT((Frame.Temp) naslov);    
+        else if (naslov instanceof Frame.Label)
+            this.memory.ldM((Frame.Label) naslov);
+        else {
+            try {
+                return this.memory.ldM(toInt(naslov));
+            } catch (IllegalArgumentException e) {
+                System.out.println("mem error");
+                System.out.println(e.toString());
+
+                prettyPrint(mem);
+                System.out.println("memend");
+            }
         }
+        return 0; 
     }
 
     private Object execute(NameExpr name) {
         return name.label;
     }
 
-    private Object execute(TempExpr temp, Map<Frame.Temp, Object> temps) {   
-        
-        //return temp.temp;
-        
-        try {
-            return this.memory.ldT(temp.temp);
-        } catch (IllegalArgumentException e) {
-           return temp.temp;
-        }        
+    private Object execute(TempExpr temp, Map<Frame.Temp, Object> temps) {           
+        return temp.temp;        
     }
 
     // ----------- pomožne funkcije -----------
@@ -293,7 +324,7 @@ public class Interpreter {
     }
 
     private boolean toBool(Object obj) {
-        return toInt(obj) == 0 ? false : true;
+        return toInt((boolean) obj) == 0 ? false : true;
     }
 
     private int toInt(boolean bool) {

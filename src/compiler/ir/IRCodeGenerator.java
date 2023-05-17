@@ -169,7 +169,8 @@ public class IRCodeGenerator implements Visitor {
 
         for (Expr arg: call.arguments) {
             var argCode = this.getIRNode(arg);
-            args.add((IRExpr) argCode);
+            var argMem = new MemExpr((IRExpr) argCode);
+            args.add(argMem);
         }
 
         var label = frame.label;
@@ -237,24 +238,30 @@ public class IRCodeGenerator implements Visitor {
         var L1 = new LabelStmt(Label.nextAnonymous());
         var L2 = new LabelStmt(Label.nextAnonymous());
 
+        // i
         var counter = this.getIRNode(forLoop.counter);
-        var low = this.getIRNode(forLoop.low);
-        var high = this.getIRNode(forLoop.high);               
+        var CounterMem = new MemExpr((IRExpr) counter);
 
-        // assign 
-        var LowMem = new MemExpr((IRExpr) low);
-        var move = new MoveStmt((IRExpr) counter, LowMem);
+        // 0
+        var low = this.getIRNode(forLoop.low);  
+        var LowMem = new MemExpr((IRExpr) low);      
+          
+
+        // 10
+        var high = this.getIRNode(forLoop.high);
+        var HighMem = new MemExpr((IRExpr) high);             
+
+        // assign i = 0
+        var move = new MoveStmt(CounterMem, LowMem);
         stavki.add(move);
 
         // start
         stavki.add(L0);
 
-        // condition
-        var CounterMem = new MemExpr((IRExpr) counter);
-        var HighMem = new MemExpr((IRExpr) high);
+        // condition        
 
-        var bin = new BinopExpr(CounterMem, HighMem, Operator.LEQ);
-        var cjump = new CJumpStmt(bin, L1.label, L2.label);
+        var condition = new BinopExpr(CounterMem, HighMem, Operator.LEQ);
+        var cjump = new CJumpStmt(condition, L1.label, L2.label);
         stavki.add(cjump);        
 
         // body        
@@ -269,7 +276,7 @@ public class IRCodeGenerator implements Visitor {
 
         var binStep = new BinopExpr(CounterMem, StepMem, Operator.ADD);
 
-        var counterPlusStep = new MoveStmt((IRExpr) counter, binStep);
+        var counterPlusStep = new MoveStmt(CounterMem, binStep);
         stavki.add(counterPlusStep);
 
         var jump = new JumpStmt(L0.label);
@@ -279,7 +286,7 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L2);
 
         var seq = new SeqStmt(stavki);
-        var code = new EseqExpr(seq, new ConstantExpr(0));
+        var code = new EseqExpr(seq, new ConstantExpr(-99));
         imcCode.store(code, forLoop);
     }
 
@@ -459,13 +466,16 @@ public class IRCodeGenerator implements Visitor {
     @Override
     public void visit(FunDef funDef) {
 
-        var body = new ExpStmt((IRExpr) this.getIRNode(funDef.body));
+        var body = (IRExpr) this.getIRNode(funDef.body);
+        var bodyExpr = new ExpStmt(body);
         var frame = this.getFrame(funDef);
 
         // more shrant vrednost
         //var FP = NameExpr.FP();
+        //var result = new MoveStmt(FP, body);
+        //imcCode.store(new EseqExpr(result, body), funDef);
 
-        var chunk = new Chunk.CodeChunk(frame, body);    
+        var chunk = new Chunk.CodeChunk(frame, bodyExpr);    
         this.chunks.add(chunk);
     }
 
