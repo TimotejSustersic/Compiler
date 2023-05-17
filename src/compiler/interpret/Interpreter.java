@@ -109,19 +109,18 @@ public class Interpreter {
 
     private Object execute(CJumpStmt cjump) {
         if (toBool(execute(cjump.condition)))
-            return execute(new JumpStmt(cjump.thenLabel));
+            return cjump.thenLabel;
         else 
-            return execute(new JumpStmt(cjump.elseLabel));
+            return cjump.elseLabel;
     }
 
     private Object execute(ExpStmt exp) {
         return execute(exp.expr);
     }
 
-    private Object execute(JumpStmt jump) {
+    private Object execute(JumpStmt jump) {       
         
-
-        return null;
+        return jump.label;
     }
 
     private Object execute(MoveStmt move) {
@@ -251,7 +250,6 @@ public class Interpreter {
         try {
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
-            System.out.println(naslov.toString());
             return this.memory.ldM((Frame.Label) naslov);
         }
     }
@@ -261,7 +259,7 @@ public class Interpreter {
     }
 
     private Object execute(TempExpr temp) {
-        throw new UnsupportedOperationException("Unimplemented method 'execute10'");
+        return temp.temp.id;
     }
 
     // ----------- pomožne funkcije -----------

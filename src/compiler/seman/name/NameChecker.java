@@ -9,6 +9,7 @@ import static common.RequireNonNull.requireNonNull;
 
 import java.util.ArrayList;
 
+import common.Constants;
 import common.Report;
 import compiler.common.Visitor;
 import compiler.lexer.Position;
@@ -54,11 +55,11 @@ public class NameChecker implements Visitor {
         paramsStr.add(new Parameter(defLocation, "int", Atom.STR(defLocation)));
         paramsLog.add(new Parameter(defLocation, "int", Atom.LOG(defLocation)));
 
-        var printInt = new FunDef(defLocation, "printInt", paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var seed = new FunDef(defLocation, "seed", paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var printStr = new FunDef(defLocation, "printStr", paramsStr, Atom.STR(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var printLog = new FunDef(defLocation, "printLog", paramsLog, Atom.LOG(defLocation), new Block(defLocation, new ArrayList<Expr>()));
-        var rand = new FunDef(defLocation, "rand", paramsInt2, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printInt = new FunDef(defLocation, Constants.printIntLabel, paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var seed = new FunDef(defLocation, Constants.seedLabel, paramsInt, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printStr = new FunDef(defLocation, Constants.printStringLabel, paramsStr, Atom.STR(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var printLog = new FunDef(defLocation, Constants.printLogLabel, paramsLog, Atom.LOG(defLocation), new Block(defLocation, new ArrayList<Expr>()));
+        var rand = new FunDef(defLocation, Constants.randIntLabel, paramsInt2, Atom.INT(defLocation), new Block(defLocation, new ArrayList<Expr>()));
 
         try {
             this.symbolTable.insert(printInt);

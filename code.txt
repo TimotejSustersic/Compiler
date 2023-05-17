@@ -1,9 +1,1 @@
-fun main(x: integer): integer = (
-  ( {for i = 0, 10, 1:
-      {if i % 2 == 0 then
-          printInt(1)
-      }
-    },
-    12
-  ) {where var i: integer}
-)
+fun main(s : string): integer = (print_int(2),2)
