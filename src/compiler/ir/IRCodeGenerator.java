@@ -155,6 +155,7 @@ public class IRCodeGenerator implements Visitor {
         this.definitions = definitions;
     }
 
+    // TODO poglej
     @Override
     public void visit(Call call) {
 
@@ -181,6 +182,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, call);
     }
 
+    // TODO zrihti mem
     @Override
     public void visit(Binary binary) {
 
@@ -214,6 +216,7 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
+    // DONE skor fix glede na to kako majo drugi in kako so testi narjeni
     @Override
     public void visit(Block block) {
 
@@ -231,6 +234,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, block);
     }
 
+    // DONE? 16x sem sel cez in ne vem kako bi ga naredu boljs, edin return mogoce ni ok
     @Override
     public void visit(For forLoop) {
                  
@@ -288,13 +292,15 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L2);
 
         var seq = new SeqStmt(stavki);
-        var code = new EseqExpr(seq, new ConstantExpr(-99));
+        var code = new EseqExpr(seq, new ConstantExpr(0));
         imcCode.store(code, forLoop);
     }
 
+    // DONE bi reku zgleda kul
     // tko da vedno vrne naslov in mors pol naknadno mem delat
     @Override
     public void visit(Name name) {
+
         var definition = this.getDefinition(name);
         var access = this.getAccess(definition);
        
@@ -315,8 +321,9 @@ public class IRCodeGenerator implements Visitor {
             var code = new BinopExpr(FP, offset, Operator.ADD);
 
             this.imcCode.store(code, name); 
-        }
+        } 
         else {
+
             var dostop = (compiler.frm.Access.Parameter) access;
             var offset = new ConstantExpr(dostop.offset);            
             var FP = NameExpr.FP();           
@@ -327,6 +334,7 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
+    // DONE amak spet ta return je cudn mogoce spremlji ce ga sploh kje uporabis
     @Override
     public void visit(IfThenElse ifThenElse) {
                 
@@ -367,6 +375,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, ifThenElse);
     }
 
+    // DONE
     @Override
     public void visit(Literal literal) {
         var type = this.getType(literal);
@@ -375,6 +384,7 @@ public class IRCodeGenerator implements Visitor {
         if (type.isInt())
             code = new ConstantExpr(Integer.parseInt(literal.value));
         else if (type.isLog()) {
+            // optimizeri tko k za int
             if (literal.value.equals("true"))
                 code = new ConstantExpr(1);
             else 
@@ -388,15 +398,11 @@ public class IRCodeGenerator implements Visitor {
 
             var dataChunk = new Chunk.DataChunk(access, literal.value);
             this.chunks.add(dataChunk);
-        }  
-        // else if (type.isArray()) {
-        //     Type.Array arr = (Type.Array) type;
-
-        //     arr.
-        // }
+        }
         imcCode.store(code, literal);
     }
 
+    // DONE
     @Override
     public void visit(Unary unary) {       
 
@@ -409,6 +415,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, unary);
     }
 
+    // DONE razn return
     @Override
     public void visit(While whileLoop) {
         
@@ -444,6 +451,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, whileLoop);
     }
 
+    // DONE bi reku
     @Override
     public void visit(Where where) {
 
@@ -453,6 +461,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store((IRExpr) body, where);
     }
 
+    // DONE
     @Override
     public void visit(Defs defs) {
         for (Def def : defs.definitions) {
@@ -465,6 +474,7 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
+    // TODO shrani vrednost
     @Override
     public void visit(FunDef funDef) {
 
@@ -481,33 +491,45 @@ public class IRCodeGenerator implements Visitor {
         this.chunks.add(chunk);
     }
 
+    // DONE
     @Override
     public void visit(TypeDef typeDef) {
         // /
+        System.out.println("typeDef");
     }
  
+    // DONE
     @Override
     public void visit(VarDef varDef) {
         // /
+        System.out.println("varDef");
     }
 
+    // DONE
     @Override
     public void visit(Parameter parameter) {
         // /
+        System.out.println("parameter");
     }
 
+    // DONE
     @Override
     public void visit(Array array) {
         // /
+        System.out.println("array");
     }
 
+    // DONE
     @Override
     public void visit(Atom atom) {
         // /
+        System.out.println("atom");
     }
 
+    // DONE
     @Override
     public void visit(TypeName name) {
         // /
+        System.out.println("name");
     }
 }

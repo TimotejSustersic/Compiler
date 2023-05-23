@@ -95,6 +95,7 @@ public class Interpreter {
         this.stackPointer += chunk.frame.size();
     }
 
+    // DONE
     private Object execute(IRStmt stmt, Map<Frame.Temp, Object> temps) {
         if (stmt instanceof CJumpStmt cjump) {
             return execute(cjump, temps);
@@ -111,6 +112,7 @@ public class Interpreter {
         }
     }
 
+    // DONE
     private Object execute(CJumpStmt cjump, Map<Frame.Temp, Object> temps) {
 
         if (toBool(execute(cjump.condition, temps)))
@@ -119,15 +121,18 @@ public class Interpreter {
             return cjump.elseLabel;
     }
 
+    // DONE
     private Object execute(ExpStmt exp, Map<Frame.Temp, Object> temps) {
         return execute(exp.expr, temps);
     }
 
+    // DONE
     private Object execute(JumpStmt jump, Map<Frame.Temp, Object> temps) {       
         
         return jump.label;
     }
 
+    // TODO zrihti mem
     private Object execute(MoveStmt move, Map<Frame.Temp, Object> temps) {
 
         //System.out.println("move");
@@ -168,6 +173,7 @@ public class Interpreter {
         return null; 
     }
 
+    // DONE
     private Object execute(IRExpr expr, Map<Frame.Temp, Object> temps) {
         if (expr instanceof BinopExpr binopExpr) {
             return execute(binopExpr, temps);
@@ -188,6 +194,7 @@ public class Interpreter {
         }
     }
 
+    // TODO pac vse
     private Object execute(BinopExpr binop, Map<Frame.Temp, Object> temps) {
 
         var left = execute(binop.lhs, temps);
@@ -241,6 +248,7 @@ public class Interpreter {
         return null;
     }
 
+    // TODO zrihti call pa probi pretvort v prvotno obliko
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
@@ -305,10 +313,12 @@ public class Interpreter {
         }
     }
 
+    // DONE
     private Object execute(ConstantExpr constant) {
         return constant.constant;
     }
 
+    // TODO 
     private Object execute(MemExpr mem, Map<Frame.Temp, Object> temps) {
 
         var naslov = execute(mem.expr, temps);
@@ -318,26 +328,28 @@ public class Interpreter {
 
         if (naslov instanceof Frame.Temp) 
             return this.memory.ldT((Frame.Temp) naslov);    
-        else if (naslov instanceof Frame.Label)
-            return this.memory.ldM((Frame.Label) naslov);
-        else {
-            try {
-                return this.memory.ldM(toInt(naslov));
-            } catch (IllegalArgumentException e) {
-                //System.out.println("mem error");
-                System.out.println(e.toString());
 
-                prettyPrint(mem);
-                //System.out.println("memend");
-            }
-        }
-        return 0; 
+        if (naslov instanceof Frame.Label)
+            return this.memory.ldM((Frame.Label) naslov);
+            
+        try {
+            return this.memory.ldM(toInt(naslov));
+        } catch (IllegalArgumentException e) {
+            //System.out.println("mem error");
+            System.out.println(e.toString());
+
+            prettyPrint(mem);
+            //System.out.println("memend");
+            return 0; 
+        }       
     }
 
+    // TODO mogoce mor sat ze kle mem
     private Object execute(NameExpr name) {
         return name.label;
     }
 
+    // TODO mogoce je treba dat mem vedno in pol pr move pohandlat
     private Object execute(TempExpr temp, Map<Frame.Temp, Object> temps) {           
         return temp.temp;        
     }
