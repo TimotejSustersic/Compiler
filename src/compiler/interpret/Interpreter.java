@@ -16,7 +16,9 @@ import java.util.HashMap;
 import java.util.Map; 
 
 import common.Constants;
+import compiler.frm.Access;
 import compiler.frm.Frame;
+import compiler.frm.Frame.Label;
 import compiler.frm.Frame.Temp;
 import compiler.gen.Memory;
 import compiler.ir.chunk.Chunk.CodeChunk;
@@ -25,6 +27,9 @@ import compiler.ir.code.expr.*;
 import compiler.ir.code.expr.BinopExpr.Operator;
 import compiler.ir.code.stmt.*;
 import compiler.ir.IRPrettyPrint;
+
+// mamo funkcijo vgrajeno in izracunaj vsoto njenih argumentov
+//lazje naloge so lokalne, vecje naloge so pa cez cel kompiler
 
 public class Interpreter {
     /**
@@ -72,6 +77,8 @@ public class Interpreter {
 
     private void internalInterpret(CodeChunk chunk, Map<Frame.Temp, Object> temps) {
         
+        this.framePointer = this.stackPointer;
+        this.stackPointer -= chunk.frame.size();
         
         Object result = null;
         if (chunk.code instanceof SeqStmt seq) {
@@ -91,7 +98,7 @@ public class Interpreter {
             throw new RuntimeException("Linearize IR!");
         }
 
-        this.framePointer = this.stackPointer;
+        this.framePointer = toInt(memory.ldM(framePointer - chunk.frame.oldFPOffset()));
         this.stackPointer += chunk.frame.size();
     }
 
@@ -126,50 +133,41 @@ public class Interpreter {
         return execute(exp.expr, temps);
     }
 
-    // DONE
+    // DONE 
     private Object execute(JumpStmt jump, Map<Frame.Temp, Object> temps) {       
         
         return jump.label;
     }
 
-    // TODO zrihti mem
+    // TEST
     private Object execute(MoveStmt move, Map<Frame.Temp, Object> temps) {
-
-        //System.out.println("move");
-        //prettyPrint(move);
+        System.out.println("-------------------------------");
+        System.out.println("move");
+        prettyPrint(move);
 
         // desni del
         var source = execute(move.src, temps);
-        Object dest;   
-        
 
-        // levi more bit brez tempa
-        if ((move.dst instanceof MemExpr))  {
-            var memDest = (MemExpr) move.dst;
-            dest = execute(memDest.expr, temps); 
+        if (move.dst instanceof TempExpr) {
+            temps.put(((TempExpr) move.dst).temp, source);
+            System.out.println("naslov: " + ((TempExpr) move.dst).temp.id);
         }
-        else {
-            dest = execute(move.dst, temps);
-        }
-
-        //System.out.println("naslov: " + dest);
-        //System.out.println("vrednost: " + source);
-
-        if (dest instanceof Frame.Temp) 
-            this.memory.stT((Frame.Temp) dest, source);          
-        else if (dest instanceof Frame.Label)
-            this.memory.stM((Frame.Label) dest, source);
         else {            
-            try {                
+            try {      
+
+                var memDest = (MemExpr) move.dst;
+                var dest = execute(memDest.expr, temps);        
+                System.out.println("naslov: " + dest);         
                 this.memory.stM(toInt(dest), source);
             } catch (IllegalArgumentException e) {  
                 System.out.println(e.toString());
-                System.out.println(dest.getClass().getSimpleName());
-            }            
+            }          
         }
 
-        //System.out.println("moveend");
-        //System.out.println("-------------------------------");
+        System.out.println("vrednost: " + source);
+
+        System.out.println("moveend");
+        System.out.println("-------------------------------");
         return null; 
     }
 
@@ -194,26 +192,11 @@ public class Interpreter {
         }
     }
 
-    // TODO pac vse
+    // DONE
     private Object execute(BinopExpr binop, Map<Frame.Temp, Object> temps) {
 
         var left = execute(binop.lhs, temps);
         var right = execute(binop.rhs, temps);
-
-        //Integer output = null;
-        //FP
-        try {
-            toInt(left);
-        } catch (IllegalArgumentException e) {
-            left = this.framePointer;
-        }        
-        
-        // FP
-        try {
-            toInt(right);
-        } catch (IllegalArgumentException e) {
-            right = this.framePointer;
-        }
         
         if (binop.op == Operator.ADD) 
             return toInt(left) + toInt(right);
@@ -242,55 +225,27 @@ public class Interpreter {
         else if (binop.op == Operator.OR) 
             return toBool(left) || toBool(right);       
 
-            // dej mem skini povsod razn v klicu funkcije pa name al nameexpr ne vem
-        //System.out.println("binary: left: " + left + " right: " + right + " result: " + output);
-        //return output;
         return null;
     }
 
-    // TODO zrihti call pa probi pretvort v prvotno obliko
+    // TODO
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
+        prettyPrint(call);
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
-
-            try {
-            var output = this.memory.ldT((Temp) arg);
-            outputStream.ifPresent(stream -> stream.println(output));
-            }
-            catch (IllegalArgumentException e) {
-                System.out.println(e.toString());
-            }
-            
+            outputStream.ifPresent(stream -> stream.println(arg));
             return null;
         } else if (call.label.name.equals(Constants.printStringLabel)) {
-            if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }           
+            if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var address = execute(call.args.get(1), temps);
-            //var res = memory.ldM(toInt(address));
-            try {
-                var output = this.memory.ldT((Temp) address);
-                outputStream.ifPresent(stream -> stream.println("\""+output+"\""));
-            }
-            catch (IllegalArgumentException e) {
-                System.out.println(e.toString());
-            }
-
+            var res = memory.ldM(toInt(address));
+            outputStream.ifPresent(stream -> stream.println("\""+res+"\""));
             return null;
         } else if (call.label.name.equals(Constants.printLogLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
-            // mal pofejkan
-            try {
-                var output = this.memory.ldT((Temp) arg);
-                if ((Integer) output == 1)
-                outputStream.ifPresent(stream -> stream.println("true"));
-                else
-                outputStream.ifPresent(stream -> stream.println("false"));
-            }
-            catch (IllegalArgumentException e) {
-                    System.out.println(e.toString());
-            }
-
+            outputStream.ifPresent(stream -> stream.println(toBool(arg)));
             return null;
         } else if (call.label.name.equals(Constants.randIntLabel)) {
             if (call.args.size() != 3) { throw new RuntimeException("Invalid argument count!"); }
@@ -307,6 +262,8 @@ public class Interpreter {
             // internalInterpret(chunk, new HashMap<>())
             //                          ~~~~~~~~~~~~~ 'lokalni registri'
             // ... 
+            // se argumente mors shranit v pomnilnik
+            // nakonc returnas rezultyt ki je kar na stackpointerju
             return execute((IRStmt) chunk.code, temps);
         } else {
             throw new RuntimeException("Only functions can be called!");
@@ -318,40 +275,37 @@ public class Interpreter {
         return constant.constant;
     }
 
-    // TODO 
+    // TODO bi reku da more bit brez te labele
     private Object execute(MemExpr mem, Map<Frame.Temp, Object> temps) {
 
+        prettyPrint(mem);
+
         var naslov = execute(mem.expr, temps);
-
-        if (mem.expr instanceof ConstantExpr) 
-            return naslov;
-
-        if (naslov instanceof Frame.Temp) 
-            return this.memory.ldT((Frame.Temp) naslov);    
-
-        if (naslov instanceof Frame.Label)
-            return this.memory.ldM((Frame.Label) naslov);
             
         try {
+            System.out.println("INT: " + this.memory.ldM(toInt(naslov)));
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
-            //System.out.println("mem error");
-            System.out.println(e.toString());
-
-            prettyPrint(mem);
-            //System.out.println("memend");
-            return 0; 
-        }       
+            System.out.println("LABEL: " + this.memory.ldM(toInt(naslov)));
+            return this.memory.ldM((Label) naslov);
+        }
     }
 
-    // TODO mogoce mor sat ze kle mem
+    // DONE
     private Object execute(NameExpr name) {
+
+        System.out.println(name.label.name);
+
+        if (name.label.name.equals("{FP}"))
+            return this.framePointer;
+        if (name.label.name.equals("{SP}"))
+            return this.stackPointer;
         return name.label;
     }
 
-    // TODO mogoce je treba dat mem vedno in pol pr move pohandlat
-    private Object execute(TempExpr temp, Map<Frame.Temp, Object> temps) {           
-        return temp.temp;        
+    // DONE
+    private Object execute(TempExpr temp, Map<Frame.Temp, Object> temps) {         
+        return temps.get(temp.temp);
     }
 
     // ----------- pomožne funkcije -----------

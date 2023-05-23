@@ -132,6 +132,7 @@ public class FrameEvaluator implements Visitor {
         this.addAccess(funDef);
         var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
         this.builders.add(builder);
+        // ce je static level 1 potem je tko drgac das pa nextAnoynomus
 
         int offset = 0;
         this.localOffset = 0;

@@ -64,6 +64,8 @@ public class IRCodeGenerator implements Visitor {
      */
     public List<Chunk> chunks = new ArrayList<>();
 
+    public int parentStaticLevel = 1;
+
 
     private void parseExpr(Expr expr) {
         if (expr instanceof Binary)
@@ -155,31 +157,83 @@ public class IRCodeGenerator implements Visitor {
         this.definitions = definitions;
     }
 
-    // TODO poglej
+    private IRExpr getMem(IRExpr expr) {
+        if (expr instanceof ConstantExpr) 
+            return expr;        
+        if (expr instanceof BinopExpr) {
+            var leva = ((BinopExpr) expr).lhs;
+            if (leva instanceof NameExpr)
+                return new MemExpr(expr);
+            return expr;
+        }
+        if (expr instanceof NameExpr) 
+            return new MemExpr(expr);        
+        if (expr instanceof TempExpr) 
+            return new MemExpr(expr);        
+        if (expr instanceof CallExpr) 
+            return new MemExpr(expr);
+        
+        System.out.println("Unknown Class:" + expr.getClass().getSimpleName());
+        return null;
+    }
+
+    // DONE mogoce sam ta mem ne vem fix pa prvi argument je verjetno narobe
     @Override
     public void visit(Call call) {
 
         var frame = this.getFrame(call);
         var args = new ArrayList<IRExpr>();           
     
-        var offset = new ConstantExpr(-4);
         var FP = NameExpr.FP();
-        var bin = new BinopExpr(FP, offset, Operator.ADD);
-        var mem = new MemExpr(bin);
-        args.add(mem);
+
+        System.out.println(this.parentStaticLevel);
+        System.out.println(frame.staticLevel);
+
+        int SLdiff = this.parentStaticLevel - frame.staticLevel;
+
+        // add SP
+        if (frame.staticLevel == 1) {
+            args.add(FP);
+        }
+        else if (SLdiff == 0) {
+            var mem = new MemExpr(FP);
+            args.add(mem);
+        }
+        else if (SLdiff == 1) {
+            args.add(FP);
+        }
+        else //if (SLdiff > 1) 
+        {
+            var multipleMEM = new MemExpr(FP);
+            while (SLdiff > 0) {
+                multipleMEM = new MemExpr(multipleMEM);
+                SLdiff--;
+            }
+            args.add(multipleMEM);
+        }
 
         for (Expr arg: call.arguments) {
             var argCode = this.getIRNode(arg);
-            var argMem = new MemExpr((IRExpr) argCode);
-            args.add(argMem);
+            args.add((IRExpr) argCode);
         }
 
         var label = frame.label;
         if (call.name.equals(Constants.printIntLabel) || call.name.equals(Constants.printLogLabel) || call.name.equals(Constants.printStringLabel) || call.name.equals(Constants.randIntLabel) || call.name.equals(Constants.seedLabel))
-        label = Label.named(call.name);
+            label = Label.named(call.name);
 
-        var code = new CallExpr(label, args);
-        imcCode.store(code, call);
+        var callExpr = new CallExpr(label, args);
+
+        var eseq = new EseqExpr(
+            new MoveStmt(
+                new MemExpr(
+                    new BinopExpr(
+                        NameExpr.SP(), 
+                        new ConstantExpr(frame.oldFPOffset()), 
+                        Operator.SUB)
+                ), NameExpr.FP())
+            , callExpr);
+
+        imcCode.store(eseq, call);
     }
 
     // TODO zrihti mem
@@ -189,13 +243,13 @@ public class IRCodeGenerator implements Visitor {
         var lhs = getIRNode(binary.left);
         var rhs = getIRNode(binary.right);
 
-        var Lmem = new MemExpr((IRExpr) lhs);
-        //var Rmem = new MemExpr((IRExpr) rhs);
+        var Lmem = this.getMem((IRExpr) lhs);
+        //var Rmem = this.getMem((IRExpr) rhs);
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {            
             
-            // brez mem
-            var move = new MoveStmt((IRExpr) lhs, (IRExpr) rhs);
+            //  pri move je levi vedno mem sam odruge stvari pomen
+            var move = new MoveStmt(Lmem, (IRExpr) rhs);
             // result je mem od vrednosti kamor si glih kar nalozu vrednost
             var code = new EseqExpr(move, Lmem);
             imcCode.store(code, binary);  
@@ -207,7 +261,8 @@ public class IRCodeGenerator implements Visitor {
             var indexTypeMultipliyer = new BinopExpr((IRExpr) rhs, typeConst, Operator.MUL);
 
             var code = new BinopExpr((IRExpr) lhs, indexTypeMultipliyer, Operator.ADD);
-            imcCode.store(code, binary);  
+            imcCode.store(code, binary);
+            // tuki je skor fix nen, oz vedno k mas offset je kako mem
         }
         else {      
             Operator op = Operator.valueOf(binary.operator.name());
@@ -216,7 +271,7 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
-    // DONE skor fix glede na to kako majo drugi in kako so testi narjeni
+    // DONE
     @Override
     public void visit(Block block) {
 
@@ -234,7 +289,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, block);
     }
 
-    // DONE? 16x sem sel cez in ne vem kako bi ga naredu boljs, edin return mogoce ni ok
+    // DONE
     @Override
     public void visit(For forLoop) {
                  
@@ -246,16 +301,16 @@ public class IRCodeGenerator implements Visitor {
 
         // i
         var counter = this.getIRNode(forLoop.counter);
-        var CounterMem = new MemExpr((IRExpr) counter);
+        var CounterMem = this.getMem((IRExpr) counter);
 
         // 0
-        var low = this.getIRNode(forLoop.low);  
-        var LowMem = new MemExpr((IRExpr) low);      
+        var low = this.getIRNode(forLoop.low);   
+        var LowMem = this.getMem((IRExpr) low);      
           
 
         // 10
         var high = this.getIRNode(forLoop.high);
-        var HighMem = new MemExpr((IRExpr) high);             
+        var HighMem = this.getMem((IRExpr) high);             
 
         // assign i = 0
         var move = new MoveStmt(CounterMem, LowMem);
@@ -264,8 +319,7 @@ public class IRCodeGenerator implements Visitor {
         // start
         stavki.add(1, L0);
 
-        // condition        
-
+        // condition
         var condition = new BinopExpr(CounterMem, HighMem, Operator.LEQ);
         var cjump = new CJumpStmt(condition, L1.label, L2.label);
         stavki.add(cjump);        
@@ -278,7 +332,7 @@ public class IRCodeGenerator implements Visitor {
 
         //step
         var step = this.getIRNode(forLoop.step);
-        var StepMem = new MemExpr((IRExpr) step);
+        var StepMem = this.getMem((IRExpr) step);
 
         var binStep = new BinopExpr(CounterMem, StepMem, Operator.ADD);
 
@@ -292,12 +346,11 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L2);
 
         var seq = new SeqStmt(stavki);
-        var code = new EseqExpr(seq, new ConstantExpr(0));
+        var code = new EseqExpr(seq, new ConstantExpr(-100));
         imcCode.store(code, forLoop);
     }
 
-    // DONE bi reku zgleda kul
-    // tko da vedno vrne naslov in mors pol naknadno mem delat
+    // DONE
     @Override
     public void visit(Name name) {
 
@@ -334,7 +387,7 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
-    // DONE amak spet ta return je cudn mogoce spremlji ce ga sploh kje uporabis
+    // DONE
     @Override
     public void visit(IfThenElse ifThenElse) {
                 
@@ -371,7 +424,7 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L3);
 
         var seq = new SeqStmt(stavki);
-        var code = new EseqExpr(seq, new ConstantExpr(0));
+        var code = new EseqExpr(seq, new ConstantExpr(-99));
         imcCode.store(code, ifThenElse);
     }
 
@@ -447,7 +500,7 @@ public class IRCodeGenerator implements Visitor {
         stavki.add(L2);
 
         var seq = new SeqStmt(stavki);
-        var code = new EseqExpr(seq, new ConstantExpr(0));
+        var code = new EseqExpr(seq, new ConstantExpr(-98));
         imcCode.store(code, whileLoop);
     }
 
@@ -474,20 +527,22 @@ public class IRCodeGenerator implements Visitor {
         }
     }
 
-    // TODO shrani vrednost
+    // DONE
     @Override
     public void visit(FunDef funDef) {
 
         var body = (IRExpr) this.getIRNode(funDef.body);
-        var bodyExpr = new ExpStmt(body);
         var frame = this.getFrame(funDef);
 
-        // more shrant vrednost
-        //var FP = NameExpr.FP();
-        //var result = new MoveStmt(FP, body);
-        //imcCode.store(new EseqExpr(result, body), funDef);
+        this.parentStaticLevel = frame.staticLevel;
 
-        var chunk = new Chunk.CodeChunk(frame, bodyExpr);    
+        // more shrant vrednost
+         // mnde mors narest mem na FP ker ma move vedno mem
+        // tuki se se shrani current frame da lahko razliko izracunas callu
+        var FP = new MemExpr(NameExpr.FP());
+        var result = new MoveStmt(FP, body);
+
+        var chunk = new Chunk.CodeChunk(frame, result);    
         this.chunks.add(chunk);
     }
 
@@ -495,21 +550,31 @@ public class IRCodeGenerator implements Visitor {
     @Override
     public void visit(TypeDef typeDef) {
         // /
-        System.out.println("typeDef");
     }
  
     // DONE
     @Override
     public void visit(VarDef varDef) {
-        // /
-        System.out.println("varDef");
+
+        if (this.definitions.valueFor(varDef).isPresent()) {
+
+            var definition = this.getDefinition(varDef);
+            var access = this.getAccess(definition);
+        
+            if (access instanceof Global) {
+                var code = new NameExpr(((Global) access).label);
+                this.imcCode.store(code, varDef); 
+
+                var globalChunk = new Chunk.GlobalChunk((Global) access);
+                this.chunks.add(globalChunk);
+            }
+        }
     }
 
     // DONE
     @Override
     public void visit(Parameter parameter) {
         // /
-        System.out.println("parameter");
     }
 
     // DONE
