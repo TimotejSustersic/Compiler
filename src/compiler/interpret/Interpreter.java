@@ -16,10 +16,8 @@ import java.util.HashMap;
 import java.util.Map; 
 
 import common.Constants;
-import compiler.frm.Access;
 import compiler.frm.Frame;
 import compiler.frm.Frame.Label;
-import compiler.frm.Frame.Temp;
 import compiler.gen.Memory;
 import compiler.ir.chunk.Chunk.CodeChunk;
 import compiler.ir.code.IRNode;
@@ -230,7 +228,6 @@ public class Interpreter {
 
     // TODO
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
-        prettyPrint(call);
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
@@ -239,7 +236,9 @@ public class Interpreter {
         } else if (call.label.name.equals(Constants.printStringLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var address = execute(call.args.get(1), temps);
-            var res = memory.ldM(toInt(address));
+            //var res = memory.ldM(toInt(address));
+            // pace vedno bo label in ne vem zakaj je on cle castov kot integer ker so stringi vedno label
+            var res = memory.ldM((Label) address);
             outputStream.ifPresent(stream -> stream.println("\""+res+"\""));
             return null;
         } else if (call.label.name.equals(Constants.printLogLabel)) {
@@ -275,7 +274,7 @@ public class Interpreter {
         return constant.constant;
     }
 
-    // TODO bi reku da more bit brez te labele
+    // TODO
     private Object execute(MemExpr mem, Map<Frame.Temp, Object> temps) {
 
         prettyPrint(mem);
@@ -286,15 +285,13 @@ public class Interpreter {
             System.out.println("INT: " + this.memory.ldM(toInt(naslov)));
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
-            System.out.println("LABEL: " + this.memory.ldM(toInt(naslov)));
-            return this.memory.ldM((Label) naslov);
+            System.out.println(e);
         }
+        return null;
     }
 
     // DONE
     private Object execute(NameExpr name) {
-
-        System.out.println(name.label.name);
 
         if (name.label.name.equals("{FP}"))
             return this.framePointer;

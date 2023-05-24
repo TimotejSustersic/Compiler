@@ -186,11 +186,12 @@ public class IRCodeGenerator implements Visitor {
     
         var FP = NameExpr.FP();
 
-        System.out.println(this.parentStaticLevel);
-        System.out.println(frame.staticLevel);
+        //System.out.println(this.parentStaticLevel);
+        //System.out.println(frame.staticLevel);
+       
 
-        int SLdiff = this.parentStaticLevel - frame.staticLevel;
-
+        int SLdiff = Math.abs(this.parentStaticLevel - frame.staticLevel);
+        
         // add SP
         if (frame.staticLevel == 1) {
             args.add(FP);
@@ -261,8 +262,9 @@ public class IRCodeGenerator implements Visitor {
             var indexTypeMultipliyer = new BinopExpr((IRExpr) rhs, typeConst, Operator.MUL);
 
             var code = new BinopExpr((IRExpr) lhs, indexTypeMultipliyer, Operator.ADD);
-            imcCode.store(code, binary);
-            // tuki je skor fix nen, oz vedno k mas offset je kako mem
+
+            // mem ali ne mem
+            imcCode.store(new MemExpr(code), binary);
         }
         else {      
             Operator op = Operator.valueOf(binary.operator.name());
