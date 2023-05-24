@@ -230,7 +230,7 @@ public class Interpreter {
 
     // TODO
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
-        prettyPrint(call);
+        //prettyPrint(call);
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
@@ -295,7 +295,7 @@ public class Interpreter {
         var naslov = execute(mem.expr, temps);
             
         try {
-            System.out.println("INT: " + this.memory.ldM(toInt(naslov)));
+            //System.out.println("INT: " + this.memory.ldM(toInt(naslov)));
             //System.out.println("///////////////////////////");
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
