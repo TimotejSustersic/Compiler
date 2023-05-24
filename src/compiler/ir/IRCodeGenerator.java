@@ -307,22 +307,21 @@ public class IRCodeGenerator implements Visitor {
 
         // 0
         var low = this.getIRNode(forLoop.low);   
-        var LowMem = this.getMem((IRExpr) low);      
-          
-
-        // 10
-        var high = this.getIRNode(forLoop.high);
-        var HighMem = this.getMem((IRExpr) high);             
+        var LowMem = this.getMem((IRExpr) low);                      
 
         // assign i = 0
         var move = new MoveStmt(CounterMem, LowMem);
-        stavki.add(0, move);
+        stavki.add(move);
 
         // start
-        stavki.add(1, L0);
+        stavki.add(L0);
+
+        // 10
+        var high = this.getIRNode(forLoop.high);
+        var HighMem = this.getMem((IRExpr) high);     
 
         // condition
-        var condition = new BinopExpr(CounterMem, HighMem, Operator.LEQ);
+        var condition = new BinopExpr(CounterMem, HighMem, Operator.LT);
         var cjump = new CJumpStmt(condition, L1.label, L2.label);
         stavki.add(cjump);        
 

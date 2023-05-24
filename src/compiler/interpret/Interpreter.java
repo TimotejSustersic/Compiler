@@ -120,7 +120,7 @@ public class Interpreter {
     // DONE
     private Object execute(CJumpStmt cjump, Map<Frame.Temp, Object> temps) {
 
-        if (toBool(execute(cjump.condition, temps)))
+        if (toBool(execute(cjump.condition, temps))) 
             return cjump.thenLabel;
         else 
             return cjump.elseLabel;
@@ -132,40 +132,39 @@ public class Interpreter {
     }
 
     // DONE 
-    private Object execute(JumpStmt jump, Map<Frame.Temp, Object> temps) {       
-        
+    private Object execute(JumpStmt jump, Map<Frame.Temp, Object> temps) {    
         return jump.label;
     }
 
     // TEST
     private Object execute(MoveStmt move, Map<Frame.Temp, Object> temps) {
-        System.out.println("-------------------------------");
-        System.out.println("move");
-        prettyPrint(move);
+        //System.out.println("-------------------------------");
+        //System.out.println("move");
+        //prettyPrint(move);
 
         // desni del
         var source = execute(move.src, temps);
 
         if (move.dst instanceof TempExpr) {
             temps.put(((TempExpr) move.dst).temp, source);
-            System.out.println("naslov: " + ((TempExpr) move.dst).temp.id);
+            //System.out.println("naslov: " + ((TempExpr) move.dst).temp.id);
         }
         else {            
             try {      
 
                 var memDest = (MemExpr) move.dst;
                 var dest = execute(memDest.expr, temps);        
-                System.out.println("naslov: " + dest);         
+                //System.out.println("naslov: " + dest);         
                 this.memory.stM(toInt(dest), source);
             } catch (IllegalArgumentException e) {  
                 System.out.println(e.toString());
             }          
         }
 
-        System.out.println("vrednost: " + source);
+        //System.out.println("vrednost: " + source);
 
-        System.out.println("moveend");
-        System.out.println("-------------------------------");
+        //System.out.println("moveend");
+        //System.out.println("-------------------------------");
         return null; 
     }
 
@@ -228,6 +227,7 @@ public class Interpreter {
 
     // TODO
     private Object execute(CallExpr call, Map<Frame.Temp, Object> temps) {
+        prettyPrint(call);
         if (call.label.name.equals(Constants.printIntLabel)) {
             if (call.args.size() != 2) { throw new RuntimeException("Invalid argument count!"); }
             var arg = execute(call.args.get(1), temps);
@@ -257,13 +257,17 @@ public class Interpreter {
             random = new Random(seed);
             return null;
         } else if (memory.ldM(call.label) instanceof CodeChunk chunk) {
+
+           
+
+            throw new RuntimeException("Only functions can be called!");
             // ...
             // internalInterpret(chunk, new HashMap<>())
             //                          ~~~~~~~~~~~~~ 'lokalni registri'
             // ... 
             // se argumente mors shranit v pomnilnik
             // nakonc returnas rezultyt ki je kar na stackpointerju
-            return execute((IRStmt) chunk.code, temps);
+           // return execute((IRStmt) chunk.code, temps);
         } else {
             throw new RuntimeException("Only functions can be called!");
         }
@@ -276,17 +280,19 @@ public class Interpreter {
 
     // TODO
     private Object execute(MemExpr mem, Map<Frame.Temp, Object> temps) {
-
-        prettyPrint(mem);
+        //System.out.println("///////////////////////////");
+        //prettyPrint(mem);
 
         var naslov = execute(mem.expr, temps);
             
         try {
             System.out.println("INT: " + this.memory.ldM(toInt(naslov)));
+            //System.out.println("///////////////////////////");
             return this.memory.ldM(toInt(naslov));
         } catch (IllegalArgumentException e) {
             System.out.println(e);
         }
+        //System.out.println("///////////////////////////");
         return null;
     }
 

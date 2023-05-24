@@ -26,7 +26,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "PINSCompiler_70071860",
-            "args": "PINS code.txt --dump IMC --exec IMC"
+            "args": "PINS code.txt --dump INT --exec INT"
         }
     ]
 }
