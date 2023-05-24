@@ -157,25 +157,28 @@ public class IRCodeGenerator implements Visitor {
         this.definitions = definitions;
     }
 
-    private IRExpr getMem(IRExpr expr) {
-        if (expr instanceof ConstantExpr) 
-            return expr;        
-        if (expr instanceof BinopExpr) {
-            var leva = ((BinopExpr) expr).lhs;
-            if (leva instanceof NameExpr)
-                return new MemExpr(expr);
-            return expr;
-        }
-        if (expr instanceof NameExpr) 
-            return new MemExpr(expr);        
-        if (expr instanceof TempExpr) 
-            return new MemExpr(expr);        
-        if (expr instanceof CallExpr) 
-            return new MemExpr(expr);
+    // private IRExpr getMem(IRExpr expr) {
+    //     if (expr instanceof ConstantExpr) 
+    //         return expr;        
+    //     if (expr instanceof BinopExpr) {
+    //         var leva = ((BinopExpr) expr).lhs;
+    //         if (leva instanceof NameExpr)
+    //             return new MemExpr(expr);
+    //         return expr;
+    //     }
+    //     // if (expr instanceof NameExpr) 
+    //     //     return new MemExpr(expr);        
+    //     // if (expr instanceof TempExpr) 
+    //     //     return new MemExpr(expr);        
+    //     // if (expr instanceof CallExpr) 
+    //     //     return new MemExpr(expr);      
+    //     // if (expr instanceof MemExpr) 
+    //     //     return new MemExpr(expr);
         
-        System.out.println("Unknown Class:" + expr.getClass().getSimpleName());
-        return null;
-    }
+    //     System.out.println("Class:" + expr.getClass().getSimpleName());
+
+    //     return new MemExpr(expr);
+    // }
 
     // DONE mogoce sam ta mem ne vem fix pa prvi argument je verjetno narobe
     @Override
@@ -241,34 +244,35 @@ public class IRCodeGenerator implements Visitor {
     @Override
     public void visit(Binary binary) {
 
-        var lhs = getIRNode(binary.left);
-        var rhs = getIRNode(binary.right);
+        // mem naj bi bil ze v name
+        var lhs = (IRExpr) getIRNode(binary.left);
+        var rhs = (IRExpr) getIRNode(binary.right);
 
-        var Lmem = this.getMem((IRExpr) lhs);
-        //var Rmem = this.getMem((IRExpr) rhs);
+        //var Lmem = new MemExpr(lhs);
+        //var Rmem = new MemExpr(rhs);
 
         if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ASSIGN) {            
             
             //  pri move je levi vedno mem sam odruge stvari pomen
-            var move = new MoveStmt(Lmem, (IRExpr) rhs);
+            var move = new MoveStmt(lhs, rhs);
             // result je mem od vrednosti kamor si glih kar nalozu vrednost
-            var code = new EseqExpr(move, Lmem);
+            var code = new EseqExpr(move, lhs);
             imcCode.store(code, binary);  
         }
         else if (binary.operator == compiler.parser.ast.expr.Binary.Operator.ARR) {           
 
             // get naslov * type
             var typeConst = new ConstantExpr(this.getType(binary.left).asArray().get().elementSizeInBytes());
-            var indexTypeMultipliyer = new BinopExpr((IRExpr) rhs, typeConst, Operator.MUL);
+            var indexTypeMultipliyer = new BinopExpr(rhs, typeConst, Operator.MUL);
 
-            var code = new BinopExpr((IRExpr) lhs, indexTypeMultipliyer, Operator.ADD);
+            var code = new BinopExpr(lhs, indexTypeMultipliyer, Operator.ADD);
 
             // mem ali ne mem
             imcCode.store(new MemExpr(code), binary);
         }
         else {      
             Operator op = Operator.valueOf(binary.operator.name());
-            var code = new BinopExpr((IRExpr) lhs, (IRExpr) rhs, op);
+            var code = new BinopExpr(lhs, rhs, op);
             imcCode.store(code, binary);        
         }
     }
@@ -301,43 +305,45 @@ public class IRCodeGenerator implements Visitor {
         var L1 = new LabelStmt(Label.nextAnonymous());
         var L2 = new LabelStmt(Label.nextAnonymous());
 
+        // memi so ze v imenu
+
         // i
-        var counter = this.getIRNode(forLoop.counter);
-        var CounterMem = this.getMem((IRExpr) counter);
+        var counter = (IRExpr) this.getIRNode(forLoop.counter);
+        //var CounterMem = new MemExpr(counter);
 
         // 0
-        var low = this.getIRNode(forLoop.low);   
-        var LowMem = this.getMem((IRExpr) low);                      
+        var low = (IRExpr) this.getIRNode(forLoop.low);   
+        //var LowMem = new MemExpr(low);                      
 
         // assign i = 0
-        var move = new MoveStmt(CounterMem, LowMem);
+        var move = new MoveStmt(counter, low);
         stavki.add(move);
 
         // start
         stavki.add(L0);
 
         // 10
-        var high = this.getIRNode(forLoop.high);
-        var HighMem = this.getMem((IRExpr) high);     
+        var high = (IRExpr) this.getIRNode(forLoop.high);
+        //var HighMem = new MemExpr(high);     
 
         // condition
-        var condition = new BinopExpr(CounterMem, HighMem, Operator.LT);
+        var condition = new BinopExpr(counter, high, Operator.LT);
         var cjump = new CJumpStmt(condition, L1.label, L2.label);
         stavki.add(cjump);        
 
         // body        
         stavki.add(L1);
 
-        var body = this.getIRNode(forLoop.body);
-        stavki.add(new ExpStmt((IRExpr) body));
+        var body = (IRExpr) this.getIRNode(forLoop.body);
+        stavki.add(new ExpStmt(body));
 
         //step
-        var step = this.getIRNode(forLoop.step);
-        var StepMem = this.getMem((IRExpr) step);
+        var step = (IRExpr) this.getIRNode(forLoop.step);
+        //var StepMem = new MemExpr(step);
 
-        var binStep = new BinopExpr(CounterMem, StepMem, Operator.ADD);
+        var binStep = new BinopExpr(counter, step, Operator.ADD);
 
-        var counterPlusStep = new MoveStmt(CounterMem, binStep);
+        var counterPlusStep = new MoveStmt(counter, binStep);
         stavki.add(counterPlusStep);
 
         var jump = new JumpStmt(L0.label);
@@ -351,7 +357,7 @@ public class IRCodeGenerator implements Visitor {
         imcCode.store(code, forLoop);
     }
 
-    // DONE
+    // DONE mnde je ze kle mem
     @Override
     public void visit(Name name) {
 
@@ -360,7 +366,7 @@ public class IRCodeGenerator implements Visitor {
        
         if (access instanceof Global) {
             var code = new NameExpr(((Global) access).label);
-            this.imcCode.store(code, name); 
+            this.imcCode.store(new MemExpr(code), name); 
 
             var globalChunk = new Chunk.GlobalChunk((Global) access);
             this.chunks.add(globalChunk);
@@ -374,7 +380,7 @@ public class IRCodeGenerator implements Visitor {
 
             var code = new BinopExpr(FP, offset, Operator.ADD);
 
-            this.imcCode.store(code, name); 
+            this.imcCode.store(new MemExpr(code), name); 
         } 
         else {
 
@@ -384,7 +390,7 @@ public class IRCodeGenerator implements Visitor {
 
             var code = new BinopExpr(FP, offset, Operator.ADD);
 
-            this.imcCode.store(code, name); 
+            this.imcCode.store(new MemExpr(code), name); 
         }
     }
 
@@ -462,6 +468,11 @@ public class IRCodeGenerator implements Visitor {
 
         var lhs = new ConstantExpr(0);
         var rhs = getIRNode(unary.expr);
+
+        if (unary.operator == compiler.parser.ast.expr.Unary.Operator.NOT) {
+            
+
+        }
 
         Operator op = Operator.valueOf(unary.operator.name()); 
 

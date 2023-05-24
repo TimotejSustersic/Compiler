@@ -33,6 +33,6 @@ public class BinopExpr extends IRExpr {
     public static enum Operator {
         ADD, SUB, MUL, DIV, MOD, // aritmetični
         AND, OR, // logični
-        EQ, NEQ, LT, GT, LEQ, GEQ // primerjalni
+        EQ, NEQ, LT, GT, LEQ, GEQ, NOT // primerjalni
     }
 }

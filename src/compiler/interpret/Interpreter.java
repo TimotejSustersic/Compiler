@@ -220,7 +220,9 @@ public class Interpreter {
         else if (binop.op == Operator.AND) 
             return toBool(left) && toBool(right);
         else if (binop.op == Operator.OR) 
-            return toBool(left) || toBool(right);       
+            return toBool(left) || toBool(right);    
+        else if (binop.op == Operator.NOT) 
+            return !toBool(right);       
 
         return null;
     }
@@ -257,17 +259,13 @@ public class Interpreter {
             random = new Random(seed);
             return null;
         } else if (memory.ldM(call.label) instanceof CodeChunk chunk) {
-
-           
-
-            throw new RuntimeException("Only functions can be called!");
             // ...
             // internalInterpret(chunk, new HashMap<>())
             //                          ~~~~~~~~~~~~~ 'lokalni registri'
             // ... 
             // se argumente mors shranit v pomnilnik
             // nakonc returnas rezultyt ki je kar na stackpointerju
-           // return execute((IRStmt) chunk.code, temps);
+            return 0;//execute((IRStmt) chunk.code, temps);
         } else {
             throw new RuntimeException("Only functions can be called!");
         }

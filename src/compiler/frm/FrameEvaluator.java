@@ -130,7 +130,12 @@ public class FrameEvaluator implements Visitor {
             this.staticLevel++;
 
         this.addAccess(funDef);
-        var builder = new Frame.Builder(Label.named(funDef.name), this.staticLevel);
+        
+        var name = Label.named(funDef.name);
+        if (!builders.empty())
+            name = Frame.Label.nextAnonymous();
+
+        var builder = new Frame.Builder(name, this.staticLevel);
         this.builders.add(builder);
         // ce je static level 1 potem je tko drgac das pa nextAnoynomus
 
@@ -180,8 +185,10 @@ public class FrameEvaluator implements Visitor {
         int argumentsSize = 0;
         argumentsSize += oldFramePointer;
 
-        // call can be multiple so they have next anoynimus label
-        var builder = new Frame.Builder(Label.nextAnonymous(), this.staticLevel);
+        //var label = Label.nextAnonymous();
+
+
+        var builder = new Frame.Builder(Label.named(call.name), this.staticLevel);
         this.builders.add(builder);
 
         for (Expr arg: call.arguments) {
