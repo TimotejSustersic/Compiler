@@ -48,7 +48,7 @@ public class FrameEvaluator implements Visitor {
     /**
      * Opis vozlišč in njihovih definicij.
      */
-    //private final NodeDescription<Def> definitions;
+    private final NodeDescription<Def> definitions;
 
     /**
      * Opis vozlišč in njihovih podatkovnih tipov.
@@ -64,7 +64,7 @@ public class FrameEvaluator implements Visitor {
         requireNonNull(frames, accesses, definitions, types);
         this.frames = frames;
         this.accesses = accesses;
-        //this.definitions = definitions;
+        this.definitions = definitions;
         this.types = types;
     }
 
@@ -185,10 +185,15 @@ public class FrameEvaluator implements Visitor {
         int argumentsSize = 0;
         argumentsSize += oldFramePointer;
 
-        //var label = Label.nextAnonymous();
+        var label = Label.named(call.name);
 
+        var def = this.definitions.valueFor(call).get();     
+        
+        if (this.frames.valueFor(def).isPresent()) {
+            label = this.frames.valueFor(def).get().label;
+        }
 
-        var builder = new Frame.Builder(Label.named(call.name), this.staticLevel);
+        var builder = new Frame.Builder(label, this.staticLevel);
         this.builders.add(builder);
 
         for (Expr arg: call.arguments) {

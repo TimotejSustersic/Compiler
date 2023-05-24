@@ -1,11 +1,16 @@
-fun main(x: integer): integer = (
-  ( {for i = 0, 10, 1:
-      {if i % 2 == 0 then
-          print('1')
-      }
-    },
-    12
-  ) {where var i: integer}
-);
+typ int: integer;
 
-fun print(s : string): integer = 0
+fun main(x: integer): integer = (
+    { i = 0 },
+    { while i < 15: (
+        print_int(i),
+        { i = increment(i) }
+    )},
+    i
+) { where 
+    var i: int;
+    fun increment(x: integer): integer = (
+        { x = x + 1 },
+        x
+    )
+}

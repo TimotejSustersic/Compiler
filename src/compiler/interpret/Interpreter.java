@@ -18,6 +18,7 @@ import java.util.Map;
 import common.Constants;
 import compiler.frm.Frame;
 import compiler.frm.Frame.Label;
+import compiler.frm.Frame.Temp;
 import compiler.gen.Memory;
 import compiler.ir.chunk.Chunk.CodeChunk;
 import compiler.ir.code.IRNode;
@@ -264,8 +265,18 @@ public class Interpreter {
             //                          ~~~~~~~~~~~~~ 'lokalni registri'
             // ... 
             // se argumente mors shranit v pomnilnik
+            var arguments = new HashMap<Frame.Temp, Object>();
+            for (var arg: call.args) 
+                arguments.put(Temp.next(), arg);
             // nakonc returnas rezultyt ki je kar na stackpointerju
-            return 0;//execute((IRStmt) chunk.code, temps);
+            internalInterpret(chunk, arguments);
+            //System.out.println(this.memory.ldM(this.stackPointer));
+            try {
+                return this.memory.ldM(this.stackPointer);
+            } catch (Exception e) {
+                return null;
+            }
+           
         } else {
             throw new RuntimeException("Only functions can be called!");
         }
